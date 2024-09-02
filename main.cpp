@@ -44,8 +44,10 @@ int main() {
     // Solicitar valores al usuario
     printf("Ingrese el tamaño de la población: ");
     scanf("%d", &tamPoblacion);
-    printf("Ingrese el tamaño de los cromosomas: ");
-    scanf("%d", &tamCromosoma);
+    do{
+        printf("Ingrese el tamaño de los cromosomas [Minimo 3]: ");
+        scanf("%d", &tamCromosoma);
+    }while(tamCromosoma < 3);
     printf("Ingrese el número máximo de generaciones: ");
     scanf("%d", &maxGeneraciones);
     printf("Ingrese la probabilidad de mutación (entre 0 y 1): ");
@@ -135,20 +137,26 @@ void cruzarGeneracion(int **generacion) {
     for (int i = 0; i < tamPoblacion; i++) {
         nuevaGeneracion[i] = (int *)malloc(tamCromosoma * sizeof(int));
     }
-    int indice1, indice2, puntoCruza;
+    int indice1, indice2, puntoCruza1, puntoCruza2;
 
     for (int i = 1; i < tamPoblacion; i++) {
         do {
             indice1 = rand() % tamPoblacion;
             indice2 = rand() % tamPoblacion;
         } while (indice1 == indice2);
-        puntoCruza = rand() % tamCromosoma;
+        do {
+            puntoCruza1 = rand() % (tamCromosoma - 2);
+            puntoCruza2 = puntoCruza1 + (rand () % (tamCromosoma - puntoCruza1));
+        } while (puntoCruza1 == puntoCruza2);
 
         for (int j = 0; j < tamCromosoma; j++) {
+            //Logica para separar el cruzamiento de descendiente1 y descendiente 2
             if (i % 2 == 0) {
-                nuevaGeneracion[i][j] = (j <= puntoCruza) ? generacion[indice1][j] : generacion[indice2][j];
+                //nuevaGeneracion[i][j] = (j <= puntoCruza1) ? generacion[indice1][j] : generacion[indice2][j];
+                nuevaGeneracion[i][j] = (j <= puntoCruza1) ? generacion[indice1][j] : (j <= puntoCruza2) ? generacion[indice2][j] : generacion[indice1][j];
             } else {
-                nuevaGeneracion[i][j] = (j <= puntoCruza) ? generacion[indice2][j] : generacion[indice1][j];
+                //nuevaGeneracion[i][j] = (j <= puntoCruza1) ? generacion[indice2][j] : generacion[indice1][j];
+                nuevaGeneracion[i][j] = (j <= puntoCruza1) ? generacion[indice2][j] : (j <= puntoCruza2) ? generacion[indice1][j] : generacion[indice2][j];
             }
         }
     }
