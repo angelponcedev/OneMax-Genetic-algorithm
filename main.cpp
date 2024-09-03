@@ -27,7 +27,8 @@ float probMutacion;
 void generacionInicial(int **generacion);
 void imprimirGeneracion(int **generacion, int *fitness);
 void nuevaGeneracion(int **generacion, int *fitness);
-void cruzarGeneracion(int **generacion);
+void cruzarPorSegmentos(int **generacion);
+void cruzarUniformemente(int **generacion);
 void mutacion(int **generacion);
 
 // Funciones generales
@@ -58,7 +59,7 @@ int main() {
     for (int i = 0; i < tamPoblacion; i++) {
         generacion[i] = (int *)malloc(tamCromosoma * sizeof(int));
     }
-    int *arrayFitness = (int *)malloc(tamPoblacion * sizeof(int));
+    int *fitness = (int *)malloc(tamPoblacion * sizeof(int));
 
     int contadorGeneraciones = 0;
 
@@ -66,18 +67,19 @@ int main() {
     contadorGeneraciones++;
     printf("Generacion %d \n", contadorGeneraciones);
     generacionInicial(generacion);
-    calcularFitness(generacion, arrayFitness);
-    imprimirGeneracion(generacion, arrayFitness);
+    calcularFitness(generacion, fitness);
+    imprimirGeneracion(generacion, fitness);
 
     // Mejoramiento de generaciones
     while (contadorGeneraciones < maxGeneraciones) {
         contadorGeneraciones++;
-        nuevaGeneracion(generacion, arrayFitness);
-        cruzarGeneracion(generacion);
+        nuevaGeneracion(generacion, fitness);
+        //cruzarPorSegmentos(generacion);
+        cruzarUniformemente(generacion);
         mutacion(generacion);
-        calcularFitness(generacion, arrayFitness);
+        calcularFitness(generacion, fitness);
         printf("Generacion %d \n", contadorGeneraciones);
-        imprimirGeneracion(generacion, arrayFitness);
+        imprimirGeneracion(generacion, fitness);
     }
 
     // Liberar memoria
@@ -85,7 +87,7 @@ int main() {
         free(generacion[i]);
     }
     free(generacion);
-    free(arrayFitness);
+    free(fitness);
 
     return 0;
 }
@@ -132,7 +134,7 @@ void nuevaGeneracion(int **generacion, int *fitness) {
     free(nuevaGeneracion);
 }
 
-void cruzarGeneracion(int **generacion) {
+void cruzarPorSegmentos(int **generacion) {
     int **nuevaGeneracion = (int **)malloc(tamPoblacion * sizeof(int *));
     for (int i = 0; i < tamPoblacion; i++) {
         nuevaGeneracion[i] = (int *)malloc(tamCromosoma * sizeof(int));
@@ -140,15 +142,17 @@ void cruzarGeneracion(int **generacion) {
     int indice1, indice2, puntoCruza1, puntoCruza2;
 
     for (int i = 1; i < tamPoblacion; i++) {
+        //Buscando dos padres distintos de la poblacion
         do {
             indice1 = rand() % tamPoblacion;
             indice2 = rand() % tamPoblacion;
         } while (indice1 == indice2);
+        //Encontrando dos indices distintos para tomar segmentos
         do {
             puntoCruza1 = rand() % (tamCromosoma - 2);
             puntoCruza2 = puntoCruza1 + (rand () % (tamCromosoma - puntoCruza1));
         } while (puntoCruza1 == puntoCruza2);
-
+        //Generando descendientes
         for (int j = 0; j < tamCromosoma; j++) {
             //Logica para separar el cruzamiento de descendiente1 y descendiente 2
             if (i % 2 == 0) {
@@ -169,6 +173,35 @@ void cruzarGeneracion(int **generacion) {
 
     // Liberar memoria de nuevaGeneracion
     for (int i = 0; i < tamPoblacion; i++) {
+        free(nuevaGeneracion[i]);
+    }
+    free(nuevaGeneracion);
+}
+
+void cruzarUniformemente(int **generacion){
+    int **nuevaGeneracion = (int **)malloc(tamPoblacion * sizeof (int*));
+    for (int i=0; i<tamPoblacion; i++){
+        nuevaGeneracion[i] = (int*) malloc(tamCromosoma * sizeof (int*));
+    }
+    int indice1 = 0,indice2 = 0,numeroRandom = 0;
+    for(int i = 0; i< tamPoblacion; i++){
+        do{
+            indice1 = rand() % tamPoblacion;
+            indice2 = rand() % tamPoblacion;
+        }while(indice1 == indice2);
+        for(int j = 0; j < tamCromosoma; j++){
+            numeroRandom = numeroBinario();
+            nuevaGeneracion[i][j] = (numeroRandom % 2 == 0) ? generacion[indice1][j] : generacion[indice2][j];
+        }
+    }
+    //Saltando el primer individuo que es el mejor de la generacion anterior
+    for(int i = 1; i < tamPoblacion; i++){
+        for(int j = 0; j < tamCromosoma; j++){
+            generacion[i][j] = nuevaGeneracion[i][j];
+        }
+    }
+
+    for (int i = 0; i < tamPoblacion; i++){
         free(nuevaGeneracion[i]);
     }
     free(nuevaGeneracion);
