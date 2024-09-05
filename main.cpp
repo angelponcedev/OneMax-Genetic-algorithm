@@ -25,7 +25,7 @@ float probMutacion;
 
 // Funciones de generaciones
 void generacionInicial(int **generacion);
-void imprimirGeneracion(int **generacion, int *fitness);
+void imprimirGeneracion(int **generacion, int *fitness, float probMutacion);
 void nuevaGeneracion(int **generacion, int *fitness);
 void cruzarPorSegmentos(int **generacion);
 void cruzarUniformemente(int **generacion);
@@ -39,20 +39,34 @@ int mejorIndividuo(int *fitness);
 int seleccion(int **generacion, int *fitness);
 
 int main() {
+    int cantidadRepeticionesMejor = 0;
+    float tazaDeCambioMutacion = 0;
     // Semilla de números aleatorios
     srand(time(NULL));
 
     // Solicitar valores al usuario
     printf("Ingrese el tamaño de la población: ");
     scanf("%d", &tamPoblacion);
-    do{
+
+    do {
         printf("Ingrese el tamaño de los cromosomas [Minimo 3]: ");
         scanf("%d", &tamCromosoma);
-    }while(tamCromosoma < 3);
+    } while(tamCromosoma < 3);
+
     printf("Ingrese el número máximo de generaciones: ");
     scanf("%d", &maxGeneraciones);
-    printf("Ingrese la probabilidad de mutación (entre 0 y 1): ");
-    scanf("%f", &probMutacion);
+
+    do {
+        printf("Ingrese la probabilidad de mutación (entre 0 y 1): ");
+        scanf("%f", &probMutacion);
+    } while(probMutacion < 0 or probMutacion > 1);
+
+    printf("Ingrese cantidad de veces que se puede repetir el mejor individuo para aumentar la probabilidad de mutacion: ");
+    scanf("%d", &cantidadRepeticionesMejor);
+    do{
+        printf("Ingrese la cantidad tipo float a sumar sobre la probabilidad de mutacion original despues de %d repeticiones del mejor individuo: ", cantidadRepeticionesMejor);
+        scanf("%f", &tazaDeCambioMutacion);
+    }while(tazaDeCambioMutacion < 0 or tazaDeCambioMutacion > 1);
 
     // Asignación dinámica de memoria
     int **generacion = (int **)malloc(tamPoblacion * sizeof(int *));
@@ -61,14 +75,15 @@ int main() {
     }
     int *fitness = (int *)malloc(tamPoblacion * sizeof(int));
 
-    int contadorGeneraciones = 0;
+    int contadorGeneraciones = 0, indiceMejorIndividuoAnterior = 0, indiceMejorIndividuoActual = 0, contadorMejorSinCambio = 0;
 
     // Generación inicial
     contadorGeneraciones++;
     printf("Generacion %d \n", contadorGeneraciones);
     generacionInicial(generacion);
     calcularFitness(generacion, fitness);
-    imprimirGeneracion(generacion, fitness);
+    imprimirGeneracion(generacion, fitness, probMutacion);
+    indiceMejorIndividuoAnterior  = mejorIndividuo(fitness);
 
     // Mejoramiento de generaciones
     while (contadorGeneraciones < maxGeneraciones) {
@@ -79,7 +94,22 @@ int main() {
         mutacion(generacion);
         calcularFitness(generacion, fitness);
         printf("Generacion %d \n", contadorGeneraciones);
-        imprimirGeneracion(generacion, fitness);
+        imprimirGeneracion(generacion, fitness, probMutacion);
+        indiceMejorIndividuoActual = mejorIndividuo(fitness);
+
+        if(fitness[indiceMejorIndividuoActual] == fitness[indiceMejorIndividuoAnterior]) {
+            contadorMejorSinCambio++;
+            if(contadorMejorSinCambio >= cantidadRepeticionesMejor) {
+                probMutacion += tazaDeCambioMutacion;
+                if(probMutacion > 1) probMutacion = 1;
+                contadorMejorSinCambio = 0;
+            }
+        } else {
+            contadorMejorSinCambio = 0;
+        }
+
+        // Actualizando el índice anterior
+        indiceMejorIndividuoAnterior = indiceMejorIndividuoActual;
     }
 
     // Liberar memoria
@@ -218,7 +248,7 @@ void mutacion(int **generacion) {
     }
 }
 
-void imprimirGeneracion(int **generacion, int *fitness) {
+void imprimirGeneracion(int **generacion, int *fitness, float probMutacion) {
     for (int i = 0; i < tamPoblacion; i++) {
         printf("%d.-", i + 1);
         for (int j = 0; j < tamCromosoma; j++) {
@@ -229,6 +259,7 @@ void imprimirGeneracion(int **generacion, int *fitness) {
     }
     printf("\n");
     printf("El mejor individuo de la generacion obtuvo:  %d\n", fitness[mejorIndividuo(fitness)]);
+    printf("Probabilidad de mutacion actual:  %f\n", probMutacion);
 }
 
 int numeroBinario() {
