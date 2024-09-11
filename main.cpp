@@ -45,26 +45,33 @@ int main() {
     srand(time(NULL));
 
     // Solicitar valores al usuario
-    printf("Ingrese el tamaño de la población: ");
-    scanf("%d", &tamPoblacion);
+    do{
+        printf("Ingrese el tamaño de la población (Minimo 2): ");
+        scanf("%d", &tamPoblacion);
+    }while(tamPoblacion<2);
 
     do {
-        printf("Ingrese el tamaño de los cromosomas [Minimo 3]: ");
+        printf("Ingrese el tamaño de los cromosomas (Minimo 3): ");
         scanf("%d", &tamCromosoma);
     } while(tamCromosoma < 3);
-
-    printf("Ingrese el número máximo de generaciones: ");
-    scanf("%d", &maxGeneraciones);
-
+    
+    do{
+        printf("Ingrese el número máximo de generaciones (Minimo 1): ");
+        scanf("%d", &maxGeneraciones);
+    }while(maxGeneraciones<1);
+    
     do {
-        printf("Ingrese la probabilidad de mutación (entre 0 y 1): ");
+        printf("Ingrese la probabilidad de mutación (Entre 0 y 1): ");
         scanf("%f", &probMutacion);
     } while(probMutacion < 0 or probMutacion > 1);
-
-    printf("Ingrese cantidad de veces que se puede repetir el mejor individuo para aumentar la probabilidad de mutacion: ");
-    scanf("%d", &cantidadRepeticionesMejor);
+    
     do{
-        printf("Ingrese la cantidad tipo float a sumar sobre la probabilidad de mutacion original despues de %d repeticiones del mejor individuo: ", cantidadRepeticionesMejor);
+        printf("Ingrese cantidad de veces que se puede repetir el mejor individuo para aumentar la probabilidad de mutacion (Minimo 1): ");
+        scanf("%d", &cantidadRepeticionesMejor); 
+    }while(cantidadRepeticionesMejor<1);
+    
+    do{
+        printf("Ingrese la cantidad tipo float a sumar sobre la probabilidad de mutacion original despues de %d repeticiones del mejor individuo (Entre 0 y 1): ", cantidadRepeticionesMejor);
         scanf("%f", &tazaDeCambioMutacion);
     }while(tazaDeCambioMutacion < 0 or tazaDeCambioMutacion > 1);
 
@@ -75,7 +82,7 @@ int main() {
     }
     int *fitness = (int *)malloc(tamPoblacion * sizeof(int));
 
-    int contadorGeneraciones = 0, indiceMejorIndividuoAnterior = 0, indiceMejorIndividuoActual = 0, contadorMejorSinCambio = 0;
+    int contadorGeneraciones = 0, fitnessMejorIndividuoAnterior = 0, fitnessMejorIndividuoActual = 0, contadorMejorSinCambio = 0;
 
     // Generación inicial
     contadorGeneraciones++;
@@ -83,7 +90,7 @@ int main() {
     generacionInicial(generacion);
     calcularFitness(generacion, fitness);
     imprimirGeneracion(generacion, fitness, probMutacion);
-    indiceMejorIndividuoAnterior  = mejorIndividuo(fitness);
+    fitnessMejorIndividuoAnterior  = mejorIndividuo(fitness);
 
     // Mejoramiento de generaciones
     while (contadorGeneraciones < maxGeneraciones) {
@@ -93,11 +100,10 @@ int main() {
         cruzarUniformemente(generacion);
         mutacion(generacion);
         calcularFitness(generacion, fitness);
-        printf("Generacion %d \n", contadorGeneraciones);
-        imprimirGeneracion(generacion, fitness, probMutacion);
-        indiceMejorIndividuoActual = mejorIndividuo(fitness);
-
-        if(fitness[indiceMejorIndividuoActual] == fitness[indiceMejorIndividuoAnterior]) {
+        fitnessMejorIndividuoActual = fitness[mejorIndividuo(fitness)];
+        
+        //Revisando si el mejor individuo no ha cambiado
+        if(fitnessMejorIndividuoActual == fitnessMejorIndividuoAnterior) {
             contadorMejorSinCambio++;
             if(contadorMejorSinCambio >= cantidadRepeticionesMejor) {
                 probMutacion += tazaDeCambioMutacion;
@@ -108,8 +114,12 @@ int main() {
             contadorMejorSinCambio = 0;
         }
 
+        //Imprimiendo los resultados
+        printf("Generacion %d \n", contadorGeneraciones);
+        imprimirGeneracion(generacion, fitness, probMutacion);
+
         // Actualizando el índice anterior
-        indiceMejorIndividuoAnterior = indiceMejorIndividuoActual;
+        fitnessMejorIndividuoAnterior = fitnessMejorIndividuoActual;
     }
 
     // Liberar memoria
