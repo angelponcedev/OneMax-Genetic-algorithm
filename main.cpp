@@ -1,29 +1,36 @@
 /*
 To Do  List:
-		-Generar una Poblacion
-		-Evaluar Fitness de cada individuo
-		-Seleccion por ruleta
-		    -El mejor individuo de la poblacion pasa directamente a la siguiente generacion
-            -La seleccion de ruleta se hace por sumatoria del fitness y se le asigna a cada inidviduo su porcentaje de contribucion al fitness total
-            -Seleccion aleatorio entre 1 y 100 y se escoge al ultimo individuo necesario para llegar a ese porcentaje (Empezando del mas grande al mas pequeno)
-		-Numero aleatorio entre 0 y 1
-		-Seleccionar aleatoriamente dos individuos, generar un numero aleatorio dentro del tamCromosoma, la primera mitad del descendiente es del individuo1
+		-Generar una Poblacion                                                                              🗸
+		-Evaluar Fitness de cada individuo                                                                  🗸
+		-Seleccion por ruleta                                                                               🗸
+		    -El mejor individuo de la poblacion pasa directamente a la siguiente generacion                 🗸
+            -La seleccion de ruleta se hace por sumatoria del fitness y se le asigna a cada inidviduo       🗸
+            su porcentaje de contribucion al fitness total
+            -Seleccion aleatorio entre 1 y 100 y se escoge al ultimo individuo necesario para llegar a ese  🗸
+            porcentaje (Empezando del mas grande al mas pequeno)
+		-Numero aleatorio entre 0 y 1                                                                       🗸
+		-Seleccionar aleatoriamente dos individuos, generar un numero aleatorio dentro del tamCromosoma,    🗸
+		la primera mitad del descendiente es del individuo1
 		la otra mitad es del individuo 2, hacer lo contrario para el segundo descendiente
 		-iterar por cada bit del cromosoma de los individuos de la generacion
-			-Generar un numero random entre 0 y 1, si cae dentro del rango de mutabilidad. Cambiar el bit.
-		-Incluir a los dos cromosomas que hayan resultado del proceso anterior.
-		-Hacerlo hasta que llegue al total de la poblacion
-        (Repetir hasta que se llegue a soluciones adecuadas);
+			-Generar un numero random entre 0 y 1, si cae dentro del rango de mutabilidad. Cambiar el bit.  🗸
+		-Incluir a los dos cromosomas que hayan resultado del proceso anterior.                             🗸
+		-Hacerlo hasta que llegue al total de la poblacion                                                  🗸
+        (Repetir hasta que se llegue a soluciones adecuadas);                                               🗸
+        -Implementar una funcion que lea los parametros de entrada desde un archivo "parametros.txt"
 */
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
 
 // Declarando variables globales
-int tamPoblacion, tamCromosoma, maxGeneraciones;
-float probMutacion;
+int tamPoblacion = 0, tamCromosoma = 0, maxGeneraciones = 0, cantidadRepeticionesMejor = 0;
+float probMutacion = 0, tazaDeCambioMutacion = 0;
 
-// Funciones de generaciones
+//Funcion de lectura de paramtros de entrada desde archivo
+void lecturaParametrosArchivo();
+
+// Funciones del algoritmo genetico
 void generacionInicial(int **generacion);
 void imprimirGeneracion(int **generacion, int *fitness, float probMutacion);
 void nuevaGeneracion(int **generacion, int *fitness);
@@ -39,41 +46,53 @@ int mejorIndividuo(int *fitness);
 int seleccion(int **generacion, int *fitness);
 
 int main() {
-    int cantidadRepeticionesMejor = 0;
-    float tazaDeCambioMutacion = 0;
+    int opcionEntrada = 0;
+
     // Semilla de números aleatorios
     srand(time(NULL));
 
-    // Solicitar valores al usuario
+    printf("Menu de bienvenida\n");
     do{
-        printf("Ingrese el tamaño de la población (Minimo 2): ");
-        scanf("%d", &tamPoblacion);
-    }while(tamPoblacion<2);
+        printf("1.-Lectura de parametros por archivo\n");
+        printf("2.-Lectura de paramteros por entrada estandar (teclado)\n");
+        scanf("%d",&opcionEntrada);
+    }while(opcionEntrada != 1 and opcionEntrada !=2);
 
-    do {
-        printf("Ingrese el tamaño de los cromosomas (Minimo 3): ");
-        scanf("%d", &tamCromosoma);
-    } while(tamCromosoma < 3);
-    
-    do{
-        printf("Ingrese el número máximo de generaciones (Minimo 1): ");
-        scanf("%d", &maxGeneraciones);
-    }while(maxGeneraciones<1);
-    
-    do {
-        printf("Ingrese la probabilidad de mutación (Entre 0 y 1): ");
-        scanf("%f", &probMutacion);
-    } while(probMutacion < 0 or probMutacion > 1);
-    
-    do{
-        printf("Ingrese cantidad de veces que se puede repetir el mejor individuo para aumentar la probabilidad de mutacion (Minimo 1): ");
-        scanf("%d", &cantidadRepeticionesMejor); 
-    }while(cantidadRepeticionesMejor<1);
-    
-    do{
-        printf("Ingrese la cantidad tipo float a sumar sobre la probabilidad de mutacion original despues de %d repeticiones del mejor individuo (Entre 0 y 1): ", cantidadRepeticionesMejor);
-        scanf("%f", &tazaDeCambioMutacion);
-    }while(tazaDeCambioMutacion < 0 or tazaDeCambioMutacion > 1);
+    if(opcionEntrada == 1){
+        lecturaParametrosArchivo();
+    }
+    else{
+        // Solicitar valores al usuario
+        do{
+            printf("Ingrese el tamaño de la población (Minimo 2): ");
+            scanf("%d", &tamPoblacion);
+        }while(tamPoblacion<2);
+
+        do {
+            printf("Ingrese el tamaño de los cromosomas (Minimo 3): ");
+            scanf("%d", &tamCromosoma);
+        } while(tamCromosoma < 3);
+
+        do{
+            printf("Ingrese el número máximo de generaciones (Minimo 1): ");
+            scanf("%d", &maxGeneraciones);
+        }while(maxGeneraciones<1);
+
+        do {
+            printf("Ingrese la probabilidad de mutación (Entre 0 y 1): ");
+            scanf("%f", &probMutacion);
+        } while(probMutacion < 0 or probMutacion > 1);
+
+        do{
+            printf("Ingrese cantidad de veces que se puede repetir el mejor individuo para aumentar la probabilidad de mutacion (Minimo 1): ");
+            scanf("%d", &cantidadRepeticionesMejor);
+        }while(cantidadRepeticionesMejor<1);
+
+        do{
+            printf("Ingrese la cantidad tipo float a sumar sobre la probabilidad de mutacion original despues de %d repeticiones del mejor individuo (Entre 0 y 1): ", cantidadRepeticionesMejor);
+            scanf("%f", &tazaDeCambioMutacion);
+        }while(tazaDeCambioMutacion < 0 or tazaDeCambioMutacion > 1);
+    }
 
     // Asignación dinámica de memoria
     int **generacion = (int **)malloc(tamPoblacion * sizeof(int *));
@@ -316,4 +335,55 @@ int seleccion(int **generacion, int *fitness) {
         }
     }
     return tamPoblacion - 1;
+}
+
+void lecturaParametrosArchivo(){
+    char archivo[50];
+    printf("\nIngrese el nombre del archivo a leer:");
+    scanf("%s",archivo);
+
+    FILE *fptr;
+    fptr = fopen(archivo,"r");
+    char* endptr;
+    //Verificando que el archivo exista
+    if (fptr == nullptr){
+        printf("%s no existe en el directorio de ejecucion del codigo, revise el directorio de ejecucion",archivo);
+    }
+
+    else{
+        char buffer[100];
+        int i = 0, num1 = 0, num2 = 0, num3 = 0;
+        printf("Contenido del archivo: \n");
+        while(fgets(buffer,100,fptr)){
+            i++;
+            switch (i) {
+                case 1:{
+                    num1 = atoi(buffer);
+                    printf("\n%d",num1);
+                    break;
+                }
+                case 2:{
+                    num2 = atoi(buffer);
+                    printf("\n%d",num2);
+                    break;
+                }
+                case 3:{
+                    num3 = atoi(buffer);
+                    printf("\n%d",num3);
+                    break;
+                }
+                default:{
+                    printf("\nLectura Finalizada\n");
+                    break;
+                    //return;
+                }
+            }
+        };
+
+        //Ya se pueden usar los datos del archivo como variables
+        printf("\nSuma de los tres numeros: %d", num1 + num2 + num3 );
+        return;
+    }
+
+    fclose(fptr);
 }
