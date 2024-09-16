@@ -143,7 +143,6 @@ int main() {
 
 void crearGeneracion(struct parametros* parametros){
     //Asignando memoria para las filas de la matriz
-    printf("Alocando memoria");
     parametros->generacion = (int**)malloc(parametros->tamPoblacion * sizeof (int*));
     if(parametros->generacion == NULL){
         printf("Error en la alocacion de memoria en filas de la nueva generacion.\n");
@@ -226,8 +225,7 @@ void cruzarPorSegmentos(struct parametros* parametros) {
             indice1 = rand() % parametros->tamPoblacion;
             indice2 = rand() % parametros->tamPoblacion;
         } while (indice1 == indice2);
-        //Revisando si los padres se cruzan o se pasan directamente
-        if(parametros->probCruza >= numDecimal()){
+
             //Encontrando dos indices distintos para tomar segmentos
             do {
                 puntoCruza1 = rand() % (parametros->tamCromosoma - 2);
@@ -235,25 +233,32 @@ void cruzarPorSegmentos(struct parametros* parametros) {
             } while (puntoCruza1 == puntoCruza2);
             //Generando descendientes
             for (int j = 0; j < parametros->tamCromosoma; j++) {
-                //Logica para separar el cruzamiento de descendiente1 y descendiente 2
-                if (i % 2 == 0) {
-                    //nuevaGeneracion[i][j] = (j <= puntoCruza1) ? generacion[indice1][j] : generacion[indice2][j];
-                    nuevaGeneracion[i][j] = (j <= puntoCruza1) ? parametros->generacion[indice1][j] : (j <= puntoCruza2) ? parametros->generacion[indice2][j] : parametros->generacion[indice1][j];
-                } else {
-                    //nuevaGeneracion[i][j] = (j <= puntoCruza1) ? generacion[indice2][j] : generacion[indice1][j];
-                    nuevaGeneracion[i][j] = (j <= puntoCruza1) ? parametros->generacion[indice2][j] : (j <= puntoCruza2) ? parametros->generacion[indice1][j] : parametros->generacion[indice2][j];
+                //Revisando si los padres se cruzan o se pasan directamente
+                if(parametros->probCruza >= numDecimal()) {
+                    //Logica para separar el cruzamiento de descendiente1 y descendiente 2
+                    if (i % 2 == 0) {
+                        //nuevaGeneracion[i][j] = (j <= puntoCruza1) ? generacion[indice1][j] : generacion[indice2][j];
+                        nuevaGeneracion[i][j] = (j <= puntoCruza1) ? parametros->generacion[indice1][j] : (j <=
+                                                                                                           puntoCruza2)
+                                                                                                          ? parametros->generacion[indice2][j]
+                                                                                                          : parametros->generacion[indice1][j];
+                    } else {
+                        //nuevaGeneracion[i][j] = (j <= puntoCruza1) ? generacion[indice2][j] : generacion[indice1][j];
+                        nuevaGeneracion[i][j] = (j <= puntoCruza1) ? parametros->generacion[indice2][j] : (j <=
+                                                                                                           puntoCruza2)
+                                                                                                          ? parametros->generacion[indice1][j]
+                                                                                                          : parametros->generacion[indice2][j];
+                    }
                 }
-            }
-        }
-        //Los padres pasan directo a la siguiente generacion
-        else{
-            //Primer padre
-            nuevaGeneracion[i] = parametros->generacion[indice1];
-            i++;
-            //Segundo Padre
-            if( i < parametros->tamPoblacion ){
-                nuevaGeneracion[i] = parametros->generacion[indice2];
-            }
+                    //Los padres pasan directo a la siguiente generacion
+                else{
+                    //Primer padre
+                    nuevaGeneracion[i][j] = parametros->generacion[indice1][j];
+                    //Segundo Padre
+                    if (i+1 < parametros->tamPoblacion) {
+                        nuevaGeneracion[i+1][j] = parametros->generacion[indice2][j];
+                    }
+                }
         }
     }
 
@@ -281,19 +286,19 @@ void cruzarUniformemente(struct parametros* parametros){
             indice1 = rand() % parametros->tamPoblacion;
             indice2 = rand() % parametros->tamPoblacion;
         }while(indice1 == indice2);
-        //Se hace cruzamiento
-        if(parametros->probCruza >= numDecimal()){
-            for(int j = 0; j < parametros->tamCromosoma; j++){
-                numeroRandom = numeroBinario();
-                nuevaGeneracion[i][j] = (numeroRandom % 2 == 0) ? parametros->generacion[indice1][j] : parametros->generacion[indice2][j];
+
+        for(int j = 0; j < parametros->tamCromosoma; j++){
+            //Se hace cruzamiento
+            if(parametros->probCruza >= numDecimal()){
+            numeroRandom = numeroBinario();
+            nuevaGeneracion[i][j] = (numeroRandom % 2 == 0) ? parametros->generacion[indice1][j] : parametros->generacion[indice2][j];
             }
-        }
-        //Pasan los padres directamente
-        else{
-            nuevaGeneracion[i] = parametros->generacion[indice1];
-            i++;
-            if( i < parametros->tamPoblacion ){
-                nuevaGeneracion[i] = parametros->generacion[indice2];
+            //Pasan los padres directamente
+            else{
+                nuevaGeneracion[i][j] = parametros->generacion[indice1][j];
+                if( i+1 < parametros->tamPoblacion ){
+                    nuevaGeneracion[i+1][j] = parametros->generacion[indice2][j];
+                }
             }
         }
     }
