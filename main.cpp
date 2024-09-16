@@ -17,9 +17,14 @@ To Do  List:
 		-Incluir a los dos cromosomas que hayan resultado del proceso anterior.                             🗸
 		-Hacerlo hasta que llegue al total de la poblacion                                                  🗸
         (Repetir hasta que se llegue a soluciones adecuadas);                                               🗸
-        -Implementar una funcion que lea los parametros de entrada desde un archivo "parametros.txt"
-            -Continuar la lectura de parametros cuando tenga una struct par ala data
-        -Refactorizar las variables globales a Structs
+        -Implementar una funcion que lea los parametros de entrada desde un archivo "parametros.txt"        🗸
+            -Continuar la lectura de parametros cuando tenga una struct para la data                        🗸
+        -Refactorizar las variables globales a Structs                                                      🗸
+        -Agregar probabilidad de cruza
+            -Leer probCruzamiento como parametro                                                            🗸
+            -Generar numero aleatorio entre 0 y 1                                                           🗸
+            - numAleatorio < probCruzamiento ? Cruzar los padres : los padres pasan directamente            🗸
+        -Seleccion por truncamiento
 */
 #include <cstdio>
 #include <cstdlib>
@@ -33,6 +38,7 @@ struct parametros{
     int cantidadRepeticionesMejor;
     float probMutacion;
     float tazaCambioMutacion;
+    float probCruza;
     int ** generacion;
     int * fitness;
 };
@@ -52,6 +58,7 @@ void mutacion(struct parametros* parametros);
 
 // Funciones generales
 int numeroBinario();
+float numDecimal();
 void calcularFitness(struct parametros*);
 int fitnessTotal(struct parametros*);
 int mejorIndividuo(struct parametros*);
@@ -68,7 +75,7 @@ int main() {
     printf("Menu de bienvenida\n");
     do{
         printf("1.-Lectura de parametros por archivo\n");
-        printf("2.-Lectura de paramteros por entrada estandar (teclado)\n");
+        printf("2.-Lectura de parametros por entrada estandar (teclado)\n");
         printf("\n");
         scanf("%d",&opcionEntrada);
         printf("\n");
@@ -168,14 +175,6 @@ void crearGeneracion(struct parametros* parametros){
     }
 }
 
-void liberarGeneracion(struct parametros* parametros){
-    for(int i=0; i<parametros->tamPoblacion; i++){
-        free(parametros->generacion[i]);
-    }
-    free(parametros->generacion);
-    free(parametros);
-}
-
 void generacionInicial(struct parametros* parametros){
     for(int i=0; i<parametros->tamPoblacion; i++){
         for(int j=0; j<parametros->tamCromosoma; j++){
@@ -227,20 +226,33 @@ void cruzarPorSegmentos(struct parametros* parametros) {
             indice1 = rand() % parametros->tamPoblacion;
             indice2 = rand() % parametros->tamPoblacion;
         } while (indice1 == indice2);
-        //Encontrando dos indices distintos para tomar segmentos
-        do {
-            puntoCruza1 = rand() % (parametros->tamCromosoma - 2);
-            puntoCruza2 = puntoCruza1 + (rand () % (parametros->tamCromosoma - puntoCruza1));
-        } while (puntoCruza1 == puntoCruza2);
-        //Generando descendientes
-        for (int j = 0; j < parametros->tamCromosoma; j++) {
-            //Logica para separar el cruzamiento de descendiente1 y descendiente 2
-            if (i % 2 == 0) {
-                //nuevaGeneracion[i][j] = (j <= puntoCruza1) ? generacion[indice1][j] : generacion[indice2][j];
-                nuevaGeneracion[i][j] = (j <= puntoCruza1) ? parametros->generacion[indice1][j] : (j <= puntoCruza2) ? parametros->generacion[indice2][j] : parametros->generacion[indice1][j];
-            } else {
-                //nuevaGeneracion[i][j] = (j <= puntoCruza1) ? generacion[indice2][j] : generacion[indice1][j];
-                nuevaGeneracion[i][j] = (j <= puntoCruza1) ? parametros->generacion[indice2][j] : (j <= puntoCruza2) ? parametros->generacion[indice1][j] : parametros->generacion[indice2][j];
+        //Revisando si los padres se cruzan o se pasan directamente
+        if(parametros->probCruza >= numDecimal()){
+            //Encontrando dos indices distintos para tomar segmentos
+            do {
+                puntoCruza1 = rand() % (parametros->tamCromosoma - 2);
+                puntoCruza2 = puntoCruza1 + (rand () % (parametros->tamCromosoma - puntoCruza1));
+            } while (puntoCruza1 == puntoCruza2);
+            //Generando descendientes
+            for (int j = 0; j < parametros->tamCromosoma; j++) {
+                //Logica para separar el cruzamiento de descendiente1 y descendiente 2
+                if (i % 2 == 0) {
+                    //nuevaGeneracion[i][j] = (j <= puntoCruza1) ? generacion[indice1][j] : generacion[indice2][j];
+                    nuevaGeneracion[i][j] = (j <= puntoCruza1) ? parametros->generacion[indice1][j] : (j <= puntoCruza2) ? parametros->generacion[indice2][j] : parametros->generacion[indice1][j];
+                } else {
+                    //nuevaGeneracion[i][j] = (j <= puntoCruza1) ? generacion[indice2][j] : generacion[indice1][j];
+                    nuevaGeneracion[i][j] = (j <= puntoCruza1) ? parametros->generacion[indice2][j] : (j <= puntoCruza2) ? parametros->generacion[indice1][j] : parametros->generacion[indice2][j];
+                }
+            }
+        }
+        //Los padres pasan directo a la siguiente generacion
+        else{
+            //Primer padre
+            nuevaGeneracion[i] = parametros->generacion[indice1];
+            i++;
+            //Segundo Padre
+            if( i < parametros->tamPoblacion ){
+                nuevaGeneracion[i] = parametros->generacion[indice2];
             }
         }
     }
@@ -269,9 +281,20 @@ void cruzarUniformemente(struct parametros* parametros){
             indice1 = rand() % parametros->tamPoblacion;
             indice2 = rand() % parametros->tamPoblacion;
         }while(indice1 == indice2);
-        for(int j = 0; j < parametros->tamCromosoma; j++){
-            numeroRandom = numeroBinario();
-            nuevaGeneracion[i][j] = (numeroRandom % 2 == 0) ? parametros->generacion[indice1][j] : parametros->generacion[indice2][j];
+        //Se hace cruzamiento
+        if(parametros->probCruza >= numDecimal()){
+            for(int j = 0; j < parametros->tamCromosoma; j++){
+                numeroRandom = numeroBinario();
+                nuevaGeneracion[i][j] = (numeroRandom % 2 == 0) ? parametros->generacion[indice1][j] : parametros->generacion[indice2][j];
+            }
+        }
+        //Pasan los padres directamente
+        else{
+            nuevaGeneracion[i] = parametros->generacion[indice1];
+            i++;
+            if( i < parametros->tamPoblacion ){
+                nuevaGeneracion[i] = parametros->generacion[indice2];
+            }
         }
     }
     //Saltando el primer individuo que es el mejor de la generacion anterior
@@ -316,6 +339,10 @@ int numeroBinario() {
     return rand() % 2;
 }
 
+float numDecimal(){
+    return (float)rand() / (float)RAND_MAX;
+}
+
 void calcularFitness(struct parametros* parametros) {
     for (int i = 0; i < parametros->tamPoblacion; i++) {
         parametros->fitness[i] = 0;
@@ -358,7 +385,7 @@ void lecturaParametrosArchivo(struct parametros* parametros){
     }
 
     else{
-        char buffer[100];
+        char buffer[20];
         printf("Contenido del archivo: \n");
         int i = 0;
         while(fgets(buffer,100,fptr)){
@@ -392,6 +419,11 @@ void lecturaParametrosArchivo(struct parametros* parametros){
                 case 6:{
                     parametros->tazaCambioMutacion = atof(buffer);
                     printf("\ntazaCambioMutacion: %f",parametros->tazaCambioMutacion);
+                    break;
+                }
+                case 7:{
+                    parametros->probCruza = atof(buffer);
+                    printf("\nprobCruza: %f",parametros->probCruza);
                     break;
                 }
                 default:{
@@ -437,4 +469,9 @@ void lecturaParametrosConsola(struct parametros* parametros){
         printf("Ingrese la cantidad tipo float a sumar sobre la probabilidad de mutacion original despues de %d repeticiones del mejor individuo (Entre 0 y 1): ", parametros->cantidadRepeticionesMejor);
         scanf("%f", &parametros->tazaCambioMutacion);
     }while(parametros->tazaCambioMutacion < 0 or parametros->tazaCambioMutacion > 1);
+
+    do{
+        printf("Ingrese la cantidad tipo float para probabilidad de cruza (Entre 0 y 1): ");
+        scanf("%f", &parametros->probCruza);
+    }while(parametros->probCruza < 0 or parametros->probCruza > 1);
 }
