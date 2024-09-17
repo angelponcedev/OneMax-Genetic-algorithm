@@ -26,6 +26,7 @@ To Do  List:
             - numAleatorio < probCruzamiento ? Cruzar los padres : los padres pasan directamente            🗸
         -Seleccion por truncamiento                                                                         🗸
         -Hacer menu para los cruzamientos                                                                   🗸
+        -Operador de 3 mutaciones                                                                           🗸
 */
 #include <cstdio>
 #include <cstdlib>
@@ -398,11 +399,13 @@ void cruzarTruncamiento(struct parametros* parametros){
 }
 
 void mutacion(struct parametros* parametros) {
-    //Saltando el mejor individuo de la generacion anterior
+    int cantidadMutaciones, indiceAleatorio;
     for (int i = 1; i < parametros->tamPoblacion; i++) {
-        for (int j = 0; j < parametros->tamCromosoma; j++) {
-            if ((float)rand() / RAND_MAX <= parametros->probMutacion) {
-                parametros->generacion[i][j] = 1 - parametros->generacion[i][j];
+        if ((float)rand() / RAND_MAX <= parametros->probMutacion) {
+            cantidadMutaciones = (rand() / (RAND_MAX / 3 + 1)) + 1;
+            for (int k = 0; k < cantidadMutaciones; k++) {
+                indiceAleatorio = rand() % parametros->tamCromosoma;
+                parametros->generacion[i][indiceAleatorio] = 1 - parametros->generacion[i][indiceAleatorio];
             }
         }
     }
