@@ -27,10 +27,12 @@ To Do  List:
         -Seleccion por truncamiento                                                                         🗸
         -Hacer menu para los cruzamientos                                                                   🗸
         -Operador de 3 mutaciones                                                                           🗸
+        -Seleccion por torneo
 */
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <cstring>
 
 //Declarando struct de control de datos para el algogenetico
 struct parametros{
@@ -58,6 +60,7 @@ void nuevaGeneracion(struct parametros* parametros);
 void cruzarPorSegmentos(struct parametros* parametros);
 void cruzarUniformemente(struct parametros* parametros);
 void cruzarTruncamiento(struct parametros* parametros);
+void cruzarTorneo(struct parametros* parametros);
 void mutacion(struct parametros* parametros);
 
 // Funciones generales
@@ -99,10 +102,11 @@ int main() {
         printf("1.-Cruzamiento por Segmentos\n");
         printf("2.-Cruzamiento Uniforme\n");
         printf("3.-Cruzamiento por Truncamiento\n");
+        printf("4.-Cruzamiento por Torneo\n");
         printf("\n");
         scanf("%d",&opcionCruzamiento);
         printf("\n");
-    }while(opcionCruzamiento != 1 and opcionCruzamiento !=2 and opcionCruzamiento !=3);
+    }while(opcionCruzamiento != 1 and opcionCruzamiento !=2 and opcionCruzamiento !=3 and opcionCruzamiento != 4);
 
     // Asignación dinámica de memoria
     crearGeneracion(&parametros);
@@ -135,11 +139,16 @@ int main() {
                 cruzarTruncamiento(&parametros);
                 break;
             }
+            case 4:{
+                cruzarTorneo(&parametros);
+                break;
+            }
             default:{
                 printf("Ocurrio un error en la seleccion de Cruza.\n");
                 exit(1);
             }
         }
+
         mutacion(&parametros);
         calcularFitness(&parametros);
         fitnessMejorIndividuoActual = parametros.fitness[mejorIndividuo(&parametros)];
@@ -397,6 +406,76 @@ void cruzarTruncamiento(struct parametros* parametros){
     //Cambiando la generacion anterior con la nueva
     parametros->generacion = nuevaGeneracion;
 }
+
+void cruzarTorneo(struct parametros* parametros) {
+    int indice1, indice2;
+
+    // Reservar memoria para los individuos seleccionados
+    int** individuosSeleccionados = (int**) malloc(parametros->tamPoblacion * sizeof(int*));
+    for (int i = 0; i < parametros->tamPoblacion; i++) {
+        individuosSeleccionados[i] = (int*) malloc(parametros->tamCromosoma * sizeof(int));
+    }
+
+    // Seleccionar el mejor individuo y ponerlo en el primer lugar
+    int mejor = mejorIndividuo(parametros);
+    for (int j = 0; j < parametros->tamCromosoma; j++) {
+        individuosSeleccionados[0][j] = parametros->generacion[mejor][j];
+    }
+
+    // Seleccionar el resto de los individuos
+    for (int i = 1; i < parametros->tamPoblacion; i++) {
+        do {
+            indice1 = rand() % parametros->tamPoblacion;
+            indice2 = rand() % parametros->tamPoblacion;
+        } while (indice1 == indice2);
+
+        // Escoger el mejor padre de los dos
+        (parametros->fitness[indice1] >= parametros->fitness[indice2]) ?
+        memcpy(individuosSeleccionados[i], parametros->generacion[indice1], parametros->tamCromosoma * sizeof(int)) :
+        memcpy(individuosSeleccionados[i], parametros->generacion[indice2], parametros->tamCromosoma * sizeof(int));
+    }
+
+    // Reservar memoria para la nueva generación
+    int** nuevaGeneracion = (int**) malloc(parametros->tamPoblacion * sizeof(int*));
+    for (int i = 0; i < parametros->tamPoblacion; i++) {
+        nuevaGeneracion[i] = (int*) malloc(parametros->tamCromosoma * sizeof(int));
+    }
+
+    // Copiar el mejor individuo directamente a la nueva generación
+    for (int j = 0; j < parametros->tamCromosoma; j++) {
+        nuevaGeneracion[0][j] = individuosSeleccionados[0][j];
+    }
+
+    // Cruzar el resto de los individuos
+    for (int i = 1; i < parametros->tamPoblacion; i++) {
+        do {
+            indice1 = rand() % parametros->tamPoblacion;
+            indice2 = rand() % parametros->tamPoblacion;
+        } while (indice1 == indice2);
+
+        for (int j = 0; j < parametros->tamCromosoma; j++) {
+            if (i % 2) {
+                nuevaGeneracion[i][j] = (j <= parametros->tamCromosoma / 2) ?
+                                        individuosSeleccionados[indice1][j] : individuosSeleccionados[indice2][j];
+            } else {
+                nuevaGeneracion[i][j] = (j <= parametros->tamCromosoma / 2) ?
+                                        individuosSeleccionados[indice2][j] : individuosSeleccionados[indice1][j];
+            }
+        }
+    }
+
+    // Liberar memoria de la generación anterior y los individuos seleccionados
+    for (int i = 0; i < parametros->tamPoblacion; i++) {
+        free(parametros->generacion[i]);
+        free(individuosSeleccionados[i]);
+    }
+    free(parametros->generacion);
+    free(individuosSeleccionados);
+
+    // Asignar la nueva generación
+    parametros->generacion = nuevaGeneracion;
+}
+
 
 void mutacion(struct parametros* parametros) {
     int cantidadMutaciones, indiceAleatorio;
