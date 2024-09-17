@@ -24,7 +24,8 @@ To Do  List:
             -Leer probCruzamiento como parametro                                                            🗸
             -Generar numero aleatorio entre 0 y 1                                                           🗸
             - numAleatorio < probCruzamiento ? Cruzar los padres : los padres pasan directamente            🗸
-        -Seleccion por truncamiento
+        -Seleccion por truncamiento                                                                         🗸
+        -Hacer menu para los cruzamientos                                                                   🗸
 */
 #include <cstdio>
 #include <cstdlib>
@@ -39,6 +40,7 @@ struct parametros{
     float probMutacion;
     float tazaCambioMutacion;
     float probCruza;
+    int porcientoTruncamiento;
     int ** generacion;
     int * fitness;
 };
@@ -54,20 +56,23 @@ void imprimirGeneracion(struct parametros* parametros);
 void nuevaGeneracion(struct parametros* parametros);
 void cruzarPorSegmentos(struct parametros* parametros);
 void cruzarUniformemente(struct parametros* parametros);
+void cruzarTruncamiento(struct parametros* parametros);
 void mutacion(struct parametros* parametros);
 
 // Funciones generales
 int numeroBinario();
 float numDecimal();
-void calcularFitness(struct parametros*);
-int fitnessTotal(struct parametros*);
-int mejorIndividuo(struct parametros*);
+void ordenar_por_fitness(struct parametros * params);
+int compara_fitness(const void * a, const void * b);
+void calcularFitness(struct parametros* parametros);
+int fitnessTotal(struct parametros* parametros);
+int mejorIndividuo(struct parametros* parametros);
 int seleccion(struct parametros* parametros);
 
 int main() {
     //Inicializando Struct
     struct parametros parametros = {0,0,0,0,0};
-    int opcionEntrada = 0;
+    int opcionEntrada = 0, opcionCruzamiento = 0;
 
     // Semilla de números aleatorios
     srand(time(NULL));
@@ -88,6 +93,16 @@ int main() {
         lecturaParametrosConsola(&parametros);
     }
 
+    printf("\n\n\n\n\nMenu de Cruzamiento\n");
+    do{
+        printf("1.-Cruzamiento por Segmentos\n");
+        printf("2.-Cruzamiento Uniforme\n");
+        printf("3.-Cruzamiento por Truncamiento\n");
+        printf("\n");
+        scanf("%d",&opcionCruzamiento);
+        printf("\n");
+    }while(opcionCruzamiento != 1 and opcionCruzamiento !=2 and opcionCruzamiento !=3);
+
     // Asignación dinámica de memoria
     crearGeneracion(&parametros);
 
@@ -104,9 +119,26 @@ int main() {
     // Mejoramiento de generaciones
     while (contadorGeneraciones < parametros.maxGeneraciones) {
         contadorGeneraciones++;
-        nuevaGeneracion(&parametros);
-        //cruzarPorSegmentos(generacion);
-        cruzarUniformemente(&parametros);
+        switch (opcionCruzamiento) {
+            case 1:{
+                nuevaGeneracion(&parametros);
+                cruzarPorSegmentos(&parametros);
+                break;
+            }
+            case 2:{
+                nuevaGeneracion(&parametros);
+                cruzarUniformemente(&parametros);
+                break;
+            }
+            case 3:{
+                cruzarTruncamiento(&parametros);
+                break;
+            }
+            default:{
+                printf("Ocurrio un error en la seleccion de Cruza.\n");
+                exit(1);
+            }
+        }
         mutacion(&parametros);
         calcularFitness(&parametros);
         fitnessMejorIndividuoActual = parametros.fitness[mejorIndividuo(&parametros)];
@@ -315,6 +347,56 @@ void cruzarUniformemente(struct parametros* parametros){
     free(nuevaGeneracion);
 }
 
+void cruzarTruncamiento(struct parametros* parametros){
+    //Calculando la cantidad de individuos de la poblacion que se van a usar para la cruza
+    int totalIndividuosCruza = (parametros->porcientoTruncamiento * parametros->tamPoblacion) / 100;
+    int indice1, indice2;
+
+    //nueva Generacion
+    int** nuevaGeneracion = (int**) malloc(parametros->tamPoblacion * sizeof(int*));
+    for(int i = 0; i < parametros->tamPoblacion; i++){
+        nuevaGeneracion[i] = (int*) malloc (parametros->tamCromosoma * sizeof(int));
+    }
+
+    //Ordenando la generacion por fitness
+    ordenar_por_fitness(parametros);
+
+
+    //Haciendo el cruzamiento
+    for(int i = 0; i < parametros->tamPoblacion; i++){
+        for(int j = 0; j < parametros->tamCromosoma; j++){
+            //Pasando el mejor individuo a la siguiente generacion directamente
+            if(i == 0){
+                nuevaGeneracion[i][j] = parametros -> generacion[mejorIndividuo(parametros)][j];
+            }
+            else {
+                //Seleccionar dos padres dentro del grupo de individuos ordenado
+                do {
+                    indice1 = rand() % totalIndividuosCruza;
+                    indice2 = rand() % totalIndividuosCruza;
+                } while (indice1 == indice2);
+                //Cruzamiento
+                if (i % 2) {
+                    (j <= parametros->tamCromosoma / 2) ? nuevaGeneracion[i][j] = parametros->generacion[indice1][j]
+                                                        : nuevaGeneracion[i][j] = parametros->generacion[indice2][j];
+                } else {
+                    (j <= parametros->tamCromosoma / 2) ? nuevaGeneracion[i][j] = parametros->generacion[indice2][j]
+                                                        : nuevaGeneracion[i][j] = parametros->generacion[indice1][j];
+                }
+            }
+        }
+    }
+
+    // Liberar la generación antigua
+    for(int i = 0; i < parametros->tamPoblacion; i++) {
+        free(parametros->generacion[i]);
+    }
+    free(parametros->generacion);
+
+    //Cambiando la generacion anterior con la nueva
+    parametros->generacion = nuevaGeneracion;
+}
+
 void mutacion(struct parametros* parametros) {
     //Saltando el mejor individuo de la generacion anterior
     for (int i = 1; i < parametros->tamPoblacion; i++) {
@@ -376,6 +458,59 @@ int mejorIndividuo(struct parametros* parametros) {
     return indice;
 }
 
+// Función para ordenar la generación por fitness
+void ordenar_por_fitness(struct parametros* parametros) {
+    int indicesFitness[parametros->tamPoblacion];
+
+    // Inicializar indices desde 0 hasta tamPoblacion-1
+    for (int i = 0; i < parametros->tamPoblacion; i++) {
+        indicesFitness[i] = i;
+    }
+
+    int temp;
+    int indiceTemp;
+
+    // Bubble sort para ordenar fitness e indicesFitness
+    for (int i = 0; i < parametros->tamPoblacion - 1; i++) {
+        for (int j = 0; j < parametros->tamPoblacion - i - 1; j++) {
+            if (parametros->fitness[j] < parametros->fitness[j + 1]) {
+                // Intercambiar valores de fitness
+                temp = parametros->fitness[j];
+                parametros->fitness[j] = parametros->fitness[j + 1];
+                parametros->fitness[j + 1] = temp;
+
+                // Intercambiar los índices correspondientes
+                indiceTemp = indicesFitness[j];
+                indicesFitness[j] = indicesFitness[j + 1];
+                indicesFitness[j + 1] = indiceTemp;
+            }
+        }
+    }
+
+    // Crear nueva generación basada en el orden de indicesFitness
+    int** nuevaGeneracion = (int**) malloc(parametros->tamPoblacion * sizeof(int*));
+    for (int i = 0; i < parametros->tamPoblacion; i++) {
+        nuevaGeneracion[i] = (int*) malloc(parametros->tamCromosoma * sizeof(int));
+    }
+
+    // Rellenar la nueva generación con el orden correcto
+    for (int i = 0; i < parametros->tamPoblacion; i++) {
+        for (int j = 0; j < parametros->tamCromosoma; j++) {
+            nuevaGeneracion[i][j] = parametros->generacion[indicesFitness[i]][j];
+        }
+    }
+
+    // Liberar la memoria de la generación anterior
+    for (int i = 0; i < parametros->tamPoblacion; i++) {
+        free(parametros->generacion[i]);
+    }
+    free(parametros->generacion);
+
+    // Asignar nueva generación a la variable original
+    parametros->generacion = nuevaGeneracion;
+}
+
+
 void lecturaParametrosArchivo(struct parametros* parametros){
     char archivo[50];
     printf("\nIngrese el nombre del archivo a leer:");
@@ -431,6 +566,11 @@ void lecturaParametrosArchivo(struct parametros* parametros){
                     printf("\nprobCruza: %f",parametros->probCruza);
                     break;
                 }
+                case 8:{
+                    parametros->porcientoTruncamiento = atoi(buffer);
+                    printf("\nporcientoTruncamiento: %d",parametros->porcientoTruncamiento);
+                    break;
+                }
                 default:{
                     printf("\nLectura Finalizada\n");
                     break;
@@ -479,4 +619,9 @@ void lecturaParametrosConsola(struct parametros* parametros){
         printf("Ingrese la cantidad tipo float para probabilidad de cruza (Entre 0 y 1): ");
         scanf("%f", &parametros->probCruza);
     }while(parametros->probCruza < 0 or parametros->probCruza > 1);
+
+    do{
+        printf("Ingrese la cantidad tipo int para porcentaje de poblacion usada para cruze por truncamiento (Entre 0 y 100): ");
+        scanf("%d", &parametros->porcientoTruncamiento);
+    }while(parametros->porcientoTruncamiento < 0 or parametros->porcientoTruncamiento > 100);
 }
