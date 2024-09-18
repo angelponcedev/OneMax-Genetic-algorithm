@@ -33,7 +33,6 @@ To Do  List:
 #include <cstdlib>
 #include <ctime>
 #include <cstring>
-
 //Declarando struct de control de datos para el algogenetico
 struct parametros{
     int tamPoblacion;
@@ -46,6 +45,7 @@ struct parametros{
     int porcientoTruncamiento;
     int ** generacion;
     int * fitness;
+    int * seleccionEstocastica;
 };
 
 //Funcion de lectura de parametros de entrada desde archivo
@@ -253,6 +253,28 @@ int seleccion(struct parametros* parametros) {
         }
     }
 }
+
+void seleccionEstocastica(struct parametros* parametros) {
+    parametros->seleccionEstocastica = (int*)malloc(parametros->tamPoblacion * sizeof(int));
+    int fitTotal = fitnessTotal(parametros);
+    int sumatoria = 0;
+    int segmento;
+    int j = 0;
+    segmento = fitTotal / parametros->tamPoblacion;
+    float sumatoriaSegmentos = 0.0;
+
+    for (int i = 0; i < parametros->tamPoblacion; i++) {
+        sumatoriaSegmentos += segmento;
+        while (sumatoria < sumatoriaSegmentos && j < parametros->tamPoblacion) {
+            sumatoria += parametros->fitness[j];
+            if (sumatoria >= sumatoriaSegmentos) {
+                parametros->seleccionEstocastica[i] = j;  // Guarda el índice actual
+            }
+            j++;  // Incrementa solo después de guardar el índice
+        }
+    }
+}
+
 
 void cruzarPorSegmentos(struct parametros* parametros) {
     int **nuevaGeneracion = (int **)malloc(parametros->tamPoblacion * sizeof(int *));
