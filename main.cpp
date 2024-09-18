@@ -34,7 +34,7 @@ To Do  List:
 #include <ctime>
 #include <cstring>
 //Declarando struct de control de datos para el algogenetico
-struct parametros{
+struct parametros {
     int tamPoblacion;
     int tamCromosoma;
     int maxGeneraciones;
@@ -43,10 +43,11 @@ struct parametros{
     float tazaCambioMutacion;
     float probCruza;
     int porcientoTruncamiento;
-    int ** generacion;
-    int * fitness;
-    int * seleccionEstocastica;
+    int **generacion;
+    int *fitness;
+    int **individuosSeleccionados;
 };
+
 
 //Funcion de lectura de parametros de entrada desde archivo
 void lecturaParametrosArchivo(struct parametros* parametros);
@@ -61,6 +62,7 @@ void cruzarPorSegmentos(struct parametros* parametros);
 void cruzarUniformemente(struct parametros* parametros);
 void cruzarTruncamiento(struct parametros* parametros);
 void cruzarTorneo(struct parametros* parametros);
+void seleccionEstocastica(struct parametros* parametros);
 void mutacion(struct parametros* parametros);
 
 // Funciones generales
@@ -96,17 +98,23 @@ int main() {
     else{
         lecturaParametrosConsola(&parametros);
     }
+    //Inicializando memoria para las selecciones
+    parametros.individuosSeleccionados = (int**) malloc(parametros.tamPoblacion*sizeof(int*));
+    for(int i = 0; i<parametros.tamPoblacion; i++){
+        parametros.individuosSeleccionados[i] = (int*)malloc(parametros.tamCromosoma*sizeof (int));
+    }
 
     printf("\n\n\n\n\nMenu de Cruzamiento\n");
     do{
-        printf("1.-Cruzamiento por Segmentos\n");
-        printf("2.-Cruzamiento Uniforme\n");
-        printf("3.-Cruzamiento por Truncamiento\n");
-        printf("4.-Cruzamiento por Torneo\n");
+        printf("1.-Seleccion por ruleta cruzamiento por Segmentos\n");
+        printf("2.-Seleccion por ruleta cruzamiento Uniforme\n");
+        printf("3.-Seleccion por Truncamiento cruzamiento por Segmentos\n");
+        printf("4.-Seleccion por Torneo cruzamiento por Segmentos\n");
+        printf("4.-Seleccion Estocastica cruzamiento por Segmentos\n");
         printf("\n");
         scanf("%d",&opcionCruzamiento);
         printf("\n");
-    }while(opcionCruzamiento != 1 and opcionCruzamiento !=2 and opcionCruzamiento !=3 and opcionCruzamiento != 4);
+    }while(opcionCruzamiento != 1 and opcionCruzamiento !=2 and opcionCruzamiento !=3 and opcionCruzamiento != 4 and opcionCruzamiento!=5);
 
     // Asignación dinámica de memoria
     crearGeneracion(&parametros);
@@ -141,6 +149,11 @@ int main() {
             }
             case 4:{
                 cruzarTorneo(&parametros);
+                break;
+            }
+            case 5:{
+                seleccionEstocastica(&parametros);
+                cruzarPorSegmentos(&parametros);
                 break;
             }
             default:{
@@ -255,7 +268,6 @@ int seleccion(struct parametros* parametros) {
 }
 
 void seleccionEstocastica(struct parametros* parametros) {
-    parametros->seleccionEstocastica = (int*)malloc(parametros->tamPoblacion * sizeof(int));
     int fitTotal = fitnessTotal(parametros);
     int sumatoria = 0;
     int segmento;
@@ -268,13 +280,25 @@ void seleccionEstocastica(struct parametros* parametros) {
         while (sumatoria < sumatoriaSegmentos && j < parametros->tamPoblacion) {
             sumatoria += parametros->fitness[j];
             if (sumatoria >= sumatoriaSegmentos) {
-                parametros->seleccionEstocastica[i] = j;  // Guarda el índice actual
+                parametros->individuosSeleccionados[i] = parametros->generacion[i];  // Guarda el índice actual
             }
             j++;  // Incrementa solo después de guardar el índice
         }
     }
-}
 
+    //intercambaindo generacion con individuos seleccionados para la cruza
+    for(int i = 0; i<parametros->tamPoblacion; i++){
+        free(parametros->generacion[i]);
+    }
+    free(parametros->generacion);
+
+    parametros->generacion = parametros->individuosSeleccionados;
+
+    for(int i = 0; i<parametros->tamPoblacion; i++){
+        free(parametros->individuosSeleccionados[i]);
+    }
+    free(parametros->individuosSeleccionados);
+}
 
 void cruzarPorSegmentos(struct parametros* parametros) {
     int **nuevaGeneracion = (int **)malloc(parametros->tamPoblacion * sizeof(int *));
