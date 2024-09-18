@@ -43,6 +43,7 @@ struct parametros {
     float tazaCambioMutacion;
     float probCruza;
     int porcientoTruncamiento;
+    int opcionCruzamiento;
     int **generacion;
     int *fitness;
     int **individuosSeleccionados;
@@ -62,6 +63,8 @@ void cruzarPorSegmentos(struct parametros* parametros);
 void cruzarUniformemente(struct parametros* parametros);
 void cruzarTruncamiento(struct parametros* parametros);
 void cruzarTorneo(struct parametros* parametros);
+void cruzarMascaraAleatoria(struct parametros* parametros);
+void cruzarInversion(struct parametros* parametros);
 void seleccionEstocastica(struct parametros* parametros);
 void mutacion(struct parametros* parametros);
 
@@ -77,7 +80,7 @@ int seleccion(struct parametros* parametros);
 
 int main() {
     //Inicializando Struct
-    struct parametros parametros = {0,0,0,0,0};
+    struct parametros parametros = {0,0,0,0,0.01,0.01,0.7,50,0};
     int opcionEntrada = 0, opcionCruzamiento = 0;
 
     // Semilla de números aleatorios
@@ -94,6 +97,7 @@ int main() {
 
     if(opcionEntrada == 1){
         lecturaParametrosArchivo(&parametros);
+        opcionCruzamiento = parametros.opcionCruzamiento;
     }
     else{
         lecturaParametrosConsola(&parametros);
@@ -104,17 +108,19 @@ int main() {
         parametros.individuosSeleccionados[i] = (int*)malloc(parametros.tamCromosoma*sizeof (int));
     }
 
-    printf("\n\n\n\n\nMenu de Cruzamiento\n");
-    do{
-        printf("1.-Seleccion por ruleta cruzamiento por Segmentos\n");
-        printf("2.-Seleccion por ruleta cruzamiento Uniforme\n");
+    printf("\n\n\nMenu de Cruzamiento\n");
+    while(opcionCruzamiento != 1 and opcionCruzamiento !=2 and opcionCruzamiento !=3 and opcionCruzamiento != 4 and opcionCruzamiento!=5 and opcionCruzamiento!=6 and opcionCruzamiento!=7){
+        printf("1.-Seleccion por Ruleta cruzamiento por Segmentos\n");
+        printf("2.-Seleccion por Ruleta cruzamiento Uniforme\n");
         printf("3.-Seleccion por Truncamiento cruzamiento por Segmentos\n");
         printf("4.-Seleccion por Torneo cruzamiento por Segmentos\n");
-        printf("4.-Seleccion Estocastica cruzamiento por Segmentos\n");
+        printf("5.-Seleccion Estocastica cruzamiento por Segmentos\n");
+        printf("6.-Seleccion Estocastica cruzamiento por Mascara Aleatoria\n");
+        printf("7.-Seleccion Estocastica cruzamiento por Inversion");
         printf("\n");
         scanf("%d",&opcionCruzamiento);
         printf("\n");
-    }while(opcionCruzamiento != 1 and opcionCruzamiento !=2 and opcionCruzamiento !=3 and opcionCruzamiento != 4 and opcionCruzamiento!=5);
+    }
 
     // Asignación dinámica de memoria
     crearGeneracion(&parametros);
@@ -154,6 +160,16 @@ int main() {
             case 5:{
                 seleccionEstocastica(&parametros);
                 cruzarPorSegmentos(&parametros);
+                break;
+            }
+            case 6:{
+                seleccionEstocastica(&parametros);
+                cruzarMascaraAleatoria(&parametros);
+                break;
+            }
+            case 7:{
+                seleccionEstocastica(&parametros);
+                cruzarInversion(&parametros);
                 break;
             }
             default:{
@@ -269,35 +285,63 @@ int seleccion(struct parametros* parametros) {
 
 void seleccionEstocastica(struct parametros* parametros) {
     int fitTotal = fitnessTotal(parametros);
-    int sumatoria = 0;
-    int segmento;
-    int j = 0;
-    segmento = fitTotal / parametros->tamPoblacion;
+    float segmento = (float)fitTotal / parametros->tamPoblacion;
     float sumatoriaSegmentos = 0.0;
+    int sumatoria = 0;
+    int j = 0;
+
+    // Crear una nueva generación temporal
+    int** nuevaGeneracion = (int**)malloc(parametros->tamPoblacion * sizeof(int*));
+    if (nuevaGeneracion == NULL) {
+        fprintf(stderr, "Error: No se pudo asignar memoria para nuevaGeneracion\n");
+        exit(1);
+    }
 
     for (int i = 0; i < parametros->tamPoblacion; i++) {
-        sumatoriaSegmentos += segmento;
-        while (sumatoria < sumatoriaSegmentos && j < parametros->tamPoblacion) {
-            sumatoria += parametros->fitness[j];
-            if (sumatoria >= sumatoriaSegmentos) {
-                parametros->individuosSeleccionados[i] = parametros->generacion[i];  // Guarda el índice actual
+        nuevaGeneracion[i] = (int*)malloc(parametros->tamCromosoma * sizeof(int));
+        if (nuevaGeneracion[i] == NULL) {
+            fprintf(stderr, "Error: No se pudo asignar memoria para nuevaGeneracion[%d]\n", i);
+            // Liberar la memoria ya asignada
+            for (int k = 0; k < i; k++) {
+                free(nuevaGeneracion[k]);
             }
-            j++;  // Incrementa solo después de guardar el índice
+            free(nuevaGeneracion);
+            exit(1);
         }
     }
 
-    //intercambaindo generacion con individuos seleccionados para la cruza
-    for(int i = 0; i<parametros->tamPoblacion; i++){
+    // Asegurar que el mejor individuo pase a la siguiente generación
+    int mejorIndice = mejorIndividuo(parametros);
+    memcpy(nuevaGeneracion[0], parametros->generacion[mejorIndice], parametros->tamCromosoma * sizeof(int));
+
+    // Selección estocástica
+    for (int i = 1; i < parametros->tamPoblacion; i++) {
+        sumatoriaSegmentos += segmento;
+        sumatoria = 0;
+        j = 0;
+
+        while (sumatoria < sumatoriaSegmentos && j < parametros->tamPoblacion) {
+            sumatoria += parametros->fitness[j];
+            if (sumatoria >= sumatoriaSegmentos) {
+                memcpy(nuevaGeneracion[i], parametros->generacion[j], parametros->tamCromosoma * sizeof(int));
+                break;
+            }
+            j++;
+        }
+        // Si no se seleccionó ningún individuo, seleccionar el último
+        if (j == parametros->tamPoblacion) {
+            memcpy(nuevaGeneracion[i], parametros->generacion[parametros->tamPoblacion - 1], parametros->tamCromosoma * sizeof(int));
+        }
+    }
+
+    // Liberar la generación anterior
+    for (int i = 0; i < parametros->tamPoblacion; i++) {
         free(parametros->generacion[i]);
     }
     free(parametros->generacion);
 
-    parametros->generacion = parametros->individuosSeleccionados;
-
-    for(int i = 0; i<parametros->tamPoblacion; i++){
-        free(parametros->individuosSeleccionados[i]);
-    }
-    free(parametros->individuosSeleccionados);
+    // Asignar la nueva generación
+    parametros->generacion = nuevaGeneracion;
 }
 
 void cruzarPorSegmentos(struct parametros* parametros) {
@@ -363,6 +407,67 @@ void cruzarPorSegmentos(struct parametros* parametros) {
     free(nuevaGeneracion);
 }
 
+void cruzarInversion(struct parametros* parametros) {
+    // Crear nueva generación
+    int **nuevaGeneracion = (int **)malloc(parametros->tamPoblacion * sizeof(int*));
+    if (nuevaGeneracion == NULL) {
+        fprintf(stderr, "Error: No se pudo asignar memoria para nuevaGeneracion\n");
+        exit(1);
+    }
+
+    for (int i = 0; i < parametros->tamPoblacion; i++) {
+        nuevaGeneracion[i] = (int*)malloc(parametros->tamCromosoma * sizeof(int));
+        if (nuevaGeneracion[i] == NULL) {
+            fprintf(stderr, "Error: No se pudo asignar memoria para nuevaGeneracion[%d]\n", i);
+            // Liberar la memoria ya asignada
+            for (int k = 0; k < i; k++) {
+                free(nuevaGeneracion[k]);
+            }
+            free(nuevaGeneracion);
+            exit(1);
+        }
+    }
+
+    // Copiar el mejor individuo a la nueva generación
+    int mejorIndice = mejorIndividuo(parametros);
+    memcpy(nuevaGeneracion[0], parametros->generacion[mejorIndice], parametros->tamCromosoma * sizeof(int));
+
+    // Generar el resto de la población
+    for (int i = 1; i < parametros->tamPoblacion; i++) {
+        int indice1 = rand() % parametros->tamPoblacion;
+        int fitnessIndividuo = parametros->fitness[indice1];
+        int fitnessInversion = 0;
+        int inversion[parametros->tamCromosoma];
+
+        // Generar la inversión del individuo y calcular su fitness
+        for (int j = 0; j < parametros->tamCromosoma; j++) {
+            inversion[j] = 1 - parametros->generacion[indice1][j];
+            fitnessInversion += inversion[j];
+        }
+
+        int fitnessTotal = fitnessIndividuo + fitnessInversion;
+        float porcientoIndividuo = (float)fitnessIndividuo / fitnessTotal;
+
+        for (int j = 0; j < parametros->tamCromosoma; j++) {
+            if (numDecimal() < parametros->probCruza) {
+                nuevaGeneracion[i][j] = (numDecimal() <= porcientoIndividuo) ?
+                                        parametros->generacion[indice1][j] : inversion[j];
+            } else {
+                nuevaGeneracion[i][j] = parametros->generacion[indice1][j];
+            }
+        }
+    }
+
+    // Liberar la memoria de la generación anterior
+    for (int i = 0; i < parametros->tamPoblacion; i++) {
+        free(parametros->generacion[i]);
+    }
+    free(parametros->generacion);
+
+    // Asignar la nueva generación
+    parametros->generacion = nuevaGeneracion;
+}
+
 void cruzarUniformemente(struct parametros* parametros){
     int **nuevaGeneracion = (int **)malloc(parametros->tamPoblacion * sizeof (int*));
     for (int i=0; i<parametros->tamPoblacion; i++){
@@ -382,6 +487,51 @@ void cruzarUniformemente(struct parametros* parametros){
             nuevaGeneracion[i][j] = (numeroRandom % 2 == 0) ? parametros->generacion[indice1][j] : parametros->generacion[indice2][j];
             }
             //Pasan los padres directamente
+            else{
+                nuevaGeneracion[i][j] = parametros->generacion[indice1][j];
+                if( i+1 < parametros->tamPoblacion ){
+                    nuevaGeneracion[i+1][j] = parametros->generacion[indice2][j];
+                }
+            }
+        }
+    }
+    //Saltando el primer individuo que es el mejor de la generacion anterior
+    for(int i = 1; i < parametros->tamPoblacion; i++){
+        for(int j = 0; j < parametros->tamCromosoma; j++){
+            parametros->generacion[i][j] = nuevaGeneracion[i][j];
+        }
+    }
+
+    for (int i = 0; i < parametros->tamPoblacion; i++){
+        free(nuevaGeneracion[i]);
+    }
+    free(nuevaGeneracion);
+}
+
+void cruzarMascaraAleatoria(struct parametros* parametros){
+    int **nuevaGeneracion = (int **)malloc(parametros->tamPoblacion * sizeof (int*));
+    for (int i=0; i<parametros->tamPoblacion; i++){
+        nuevaGeneracion[i] = (int*) malloc(parametros->tamCromosoma * sizeof (int*));
+    }
+    int indice1 = 0,indice2 = 0;
+
+    int mascaraAleatoria[parametros->tamCromosoma];
+    for(int i = 0; i< parametros->tamPoblacion; i++){
+        do{
+            indice1 = rand() % parametros->tamPoblacion;
+            indice2 = rand() % parametros->tamPoblacion;
+        }while(indice1 == indice2);
+        //Generando mascara
+        for(int j=0; j<parametros->tamCromosoma; j++){
+            mascaraAleatoria[j] = numeroBinario();
+        }
+
+        for(int j = 0; j < parametros->tamCromosoma; j++){
+            //Se hace cruzamiento
+            if(parametros->probCruza >= numDecimal()){
+                nuevaGeneracion[i][j] = (mascaraAleatoria[j]) ? parametros->generacion[indice1][j] : parametros->generacion[indice2][j];
+            }
+                //Pasan los padres directamente
             else{
                 nuevaGeneracion[i][j] = parametros->generacion[indice1][j];
                 if( i+1 < parametros->tamPoblacion ){
@@ -697,6 +847,11 @@ void lecturaParametrosArchivo(struct parametros* parametros){
                 case 8:{
                     parametros->porcientoTruncamiento = atoi(buffer);
                     printf("\nporcientoTruncamiento: %d",parametros->porcientoTruncamiento);
+                    break;
+                }
+                case 9:{
+                    parametros->opcionCruzamiento = atoi(buffer);
+                    printf("\nopcionCruza: %d",parametros->opcionCruzamiento);
                     break;
                 }
                 default:{
