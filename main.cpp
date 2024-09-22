@@ -788,80 +788,121 @@ void ordenar_por_fitness(struct parametros* parametros) {
     parametros->generacion = nuevaGeneracion;
 }
 
-
-void lecturaParametrosArchivo(struct parametros* parametros){
+void lecturaParametrosArchivo(struct parametros* parametros) {
     char archivo[50];
-    printf("\nIngrese el nombre del archivo a leer:");
-    scanf("%s",archivo);
+    FILE *fptr = NULL;
 
-    FILE *fptr;
-    fptr = fopen(archivo,"r");
-    char* endptr;
-    //Verificando que el archivo exista
-    if (fptr == nullptr){
-        printf("%s no existe en el directorio de ejecucion del codigo, revise el directorio de ejecucion",archivo);
+    while (fptr == NULL) {
+        printf("\nIngrese el nombre del archivo a leer: ");
+        scanf("%s", archivo);
+
+        fptr = fopen(archivo, "r");
+
+        if (fptr == NULL) {
+            printf("%s no existe en el directorio de ejecución del código. Por favor, intente de nuevo.\n", archivo);
+        }
     }
 
-    else{
-        char buffer[20];
-        printf("Contenido del archivo: \n");
-        int i = 0;
-        while(fgets(buffer,100,fptr)){
-            i++;
-            switch (i) {
-                case 1:{
-                    parametros->tamPoblacion = atoi(buffer);
-                    printf("\ntamPoblacion: %d",parametros->tamPoblacion);
-                    break;
+    char buffer[100];
+    printf("Contenido del archivo: \n");
+    int i = 0;
+    while (fgets(buffer, sizeof(buffer), fptr)) {
+        i++;
+        int intValue;
+        float floatValue;
+        switch (i) {
+            case 1:
+                intValue = atoi(buffer);
+                if (intValue < 2) {
+                    parametros->tamPoblacion = 100;
+                    printf("\ntamPoblacion fuera de rango. Valor por defecto: %d", parametros->tamPoblacion);
+                } else {
+                    parametros->tamPoblacion = intValue;
+                    printf("\ntamPoblacion: %d", parametros->tamPoblacion);
                 }
-                case 2:{
-                    parametros->tamCromosoma = atoi(buffer);
-                    printf("\ntamCromosoma: %d",parametros->tamCromosoma);
-                    break;
+                break;
+            case 2:
+                intValue = atoi(buffer);
+                if (intValue < 3) {
+                    parametros->tamCromosoma = 20;
+                    printf("\ntamCromosoma fuera de rango. Valor por defecto: %d", parametros->tamCromosoma);
+                } else {
+                    parametros->tamCromosoma = intValue;
+                    printf("\ntamCromosoma: %d", parametros->tamCromosoma);
                 }
-                case 3:{
-                    parametros->maxGeneraciones = atoi(buffer);
-                    printf("\nmaxGeneraciones: %d",parametros->maxGeneraciones);
-                    break;
+                break;
+            case 3:
+                intValue = atoi(buffer);
+                if (intValue < 1) {
+                    parametros->maxGeneraciones = 20;
+                    printf("\nmaxGeneraciones fuera de rango. Valor por defecto: %d", parametros->maxGeneraciones);
+                } else {
+                    parametros->maxGeneraciones = intValue;
+                    printf("\nmaxGeneraciones: %d", parametros->maxGeneraciones);
                 }
-                case 4:{
-                    parametros->cantidadRepeticionesMejor = atoi(buffer);
-                    printf("\nrepeticionesMejor: %d",parametros->cantidadRepeticionesMejor);
-                    break;
+                break;
+            case 4:
+                intValue = atoi(buffer);
+                if (intValue < 1) {
+                    parametros->cantidadRepeticionesMejor = 2;
+                    printf("\nrepeticionesMejor fuera de rango. Valor por defecto: %d", parametros->cantidadRepeticionesMejor);
+                } else {
+                    parametros->cantidadRepeticionesMejor = intValue;
+                    printf("\nrepeticionesMejor: %d", parametros->cantidadRepeticionesMejor);
                 }
-                case 5:{
-                    parametros->probMutacion = atof(buffer);
-                    printf("\nprobMutacion: %f",parametros->probMutacion);
-                    break;
+                break;
+            case 5:
+                floatValue = atof(buffer);
+                if (floatValue < 0 || floatValue > 1) {
+                    parametros->probMutacion = 0.05;
+                    printf("\nprobMutacion fuera de rango. Valor por defecto: %f", parametros->probMutacion);
+                } else {
+                    parametros->probMutacion = floatValue;
+                    printf("\nprobMutacion: %f", parametros->probMutacion);
                 }
-                case 6:{
-                    parametros->tazaCambioMutacion = atof(buffer);
-                    printf("\ntazaCambioMutacion: %f",parametros->tazaCambioMutacion);
-                    break;
+                break;
+            case 6:
+                floatValue = atof(buffer);
+                if (floatValue < 0 || floatValue > 1) {
+                    parametros->tazaCambioMutacion = 0.01;
+                    printf("\ntazaCambioMutacion fuera de rango. Valor por defecto: %f", parametros->tazaCambioMutacion);
+                } else {
+                    parametros->tazaCambioMutacion = floatValue;
+                    printf("\ntazaCambioMutacion: %f", parametros->tazaCambioMutacion);
                 }
-                case 7:{
-                    parametros->probCruza = atof(buffer);
-                    printf("\nprobCruza: %f",parametros->probCruza);
-                    break;
+                break;
+            case 7:
+                floatValue = atof(buffer);
+                if (floatValue < 0 || floatValue > 1) {
+                    parametros->probCruza = 0.7;
+                    printf("\nprobCruza fuera de rango. Valor por defecto: %f", parametros->probCruza);
+                } else {
+                    parametros->probCruza = floatValue;
+                    printf("\nprobCruza: %f", parametros->probCruza);
                 }
-                case 8:{
-                    parametros->porcientoTruncamiento = atoi(buffer);
-                    printf("\nporcientoTruncamiento: %d",parametros->porcientoTruncamiento);
-                    break;
+                break;
+            case 8:
+                intValue = atoi(buffer);
+                if (intValue < 0 || intValue > 100) {
+                    parametros->porcientoTruncamiento = 70;
+                    printf("\nporcientoTruncamiento fuera de rango. Valor por defecto: %d", parametros->porcientoTruncamiento);
+                } else {
+                    parametros->porcientoTruncamiento = intValue;
+                    printf("\nporcientoTruncamiento: %d", parametros->porcientoTruncamiento);
                 }
-                case 9:{
-                    parametros->opcionCruzamiento = atoi(buffer);
-                    printf("\nopcionCruza: %d",parametros->opcionCruzamiento);
-                    break;
-                }
-                default:{
-                    printf("\nLectura Finalizada\n");
-                    break;
-                }
-            }
-        };
-        printf("\n");
-        return;
+                break;
+            case 9:
+                intValue = atoi(buffer);
+                parametros->opcionCruzamiento = intValue;
+                printf("\nopcionCruza: %d", parametros->opcionCruzamiento);
+                break;
+            default:
+                printf("\nLectura de valores ha finalizado\n");
+                break;
+        }
+        if (i > 9) {
+            break;  // Salir del ciclo después de leer todos los parámetros esperados
+        }
     }
     fclose(fptr);
 }
