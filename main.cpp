@@ -28,6 +28,8 @@ To Do  List:
         -Hacer menu para los cruzamientos                                                                   🗸
         -Operador de 3 mutaciones                                                                           🗸
         -Seleccion por torneo
+        -arreglar los rangos del input de opcionCruza                                                       🗸
+        -agregar opcionSeleccion a parametros, corregir rango de input, agregarlo a lectura de paremtros    🗸
 */
 #include <cstdio>
 #include <cstdlib>
@@ -43,6 +45,7 @@ struct parametros {
     float tazaCambioMutacion;
     float probCruza;
     int porcientoTruncamiento;
+    int opcionSeleccion;
     int opcionCruzamiento;
     int **generacion;
     int *fitness;
@@ -98,6 +101,7 @@ int main() {
     if(opcionEntrada == 1){
         lecturaParametrosArchivo(&parametros);
         opcionCruzamiento = parametros.opcionCruzamiento;
+        opcionSeleccion = parametros.opcionSeleccion;
     }
     else{
         lecturaParametrosConsola(&parametros);
@@ -872,8 +876,27 @@ void lecturaParametrosArchivo(struct parametros* parametros) {
                 break;
             case 9:
                 intValue = atoi(buffer);
-                parametros->opcionCruzamiento = intValue;
-                printf("\nopcionCruza: %d", parametros->opcionCruzamiento);
+                if(intValue > 0 and intValue <5){
+                    parametros->opcionSeleccion = intValue;
+                    printf("\nopcionSeleccion: %d", parametros->opcionSeleccion);
+                }
+                else{
+                    intValue = 1;
+                    parametros->opcionSeleccion = intValue;
+                    printf("\nopcionSeleccion fuera de rango. Valor por defecto: %d", parametros->porcientoTruncamiento);
+                }
+                break;
+            case 10:
+                intValue = atoi(buffer);
+                if(intValue > 0 and intValue <5){
+                    parametros->opcionCruzamiento = intValue;
+                    printf("\nopcionCruza: %d", parametros->opcionCruzamiento);
+                }
+                else{
+                    intValue = 1;
+                    parametros->opcionCruzamiento = intValue;
+                    printf("\nopcionCruza fuera de rango. Valor por defecto: %d", parametros->porcientoTruncamiento);
+                }
                 break;
             default:
                 printf("\nLectura de valores ha finalizado\n");
