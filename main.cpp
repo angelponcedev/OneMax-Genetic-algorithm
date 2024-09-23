@@ -30,6 +30,25 @@ To Do  List:
         -Seleccion por torneo
         -arreglar los rangos del input de opcionCruza                                                       🗸
         -agregar opcionSeleccion a parametros, corregir rango de input, agregarlo a lectura de paremtros    🗸
+
+        REQUERIMIENTOS DEL EXAMEN
+        -Ordenar poblacion de mayor a menor                                                                 🗸
+        -Tomar un porciento de poblacion                                                                    🗸
+        -individuos seleccionados pasan directamnete a la nueva generacion                                  🗸
+        -el resto de la poblacion se rellena con 0 y 1 aleatorio                                            🗸
+
+        -Requerimientos:
+            -Codificarlo como funcion                                                                       🗸
+            -Hacer logs de como funciona                                                                    🗸
+            -El resto de operadores son al gusto                                                            🗸
+            -Preparar parametros txt para probar la funcion
+            -Corrida del programa con 15 y 30 cromosomas
+            -Cuando se llegue al mejor reportar los parametros usados
+
+        -Entregables:
+            -codigo fuente con comentarios
+            -word con evidencias
+            -los dos txt para 15 y 30 cromosomas
 */
 #include <cstdio>
 #include <cstdlib>
@@ -51,7 +70,8 @@ struct parametros {
     int *fitness;
     int **individuosSeleccionados;
 };
-
+//Funciones del examen
+void seleccionTruncamientoExamen(struct parametros* parametros);
 
 //Funcion de lectura de parametros de entrada desde archivo
 void lecturaParametrosArchivo(struct parametros* parametros);
@@ -112,19 +132,20 @@ int main() {
         parametros.individuosSeleccionados[i] = (int*)malloc(parametros.tamCromosoma*sizeof (int));
     }
 
-    printf("\n\n\nMenu de Seleccion\n");
-    while(opcionSeleccion != 1 and opcionSeleccion !=2 and opcionSeleccion !=3 and opcionSeleccion != 4){
+    while(opcionSeleccion != 1 and opcionSeleccion !=2 and opcionSeleccion !=3 and opcionSeleccion != 4 and opcionSeleccion != 5){
+        printf("\n\n\nMenu de Seleccion\n");
         printf("1.-Seleccion por Ruleta\n");
         printf("2.-Seleccion por Truncamiento\n");
         printf("3.-Seleccion por Torneo\n");
         printf("4.-Seleccion Estocastica\n");
+        printf("5.-Seleccion por Truncamiento Modificada [Seleccion del Examen]\n");
         printf("\n");
         scanf("%d",&opcionSeleccion);
         printf("\n");
     }
 
-    printf("\n\n\nMenu de Cruzamiento\n");
     while(opcionCruzamiento != 1 and opcionCruzamiento !=2 and opcionCruzamiento !=3 and opcionCruzamiento != 4){
+        printf("\n\n\nMenu de Cruzamiento\n");
         printf("1.-Cruzamiento por Segmentos\n");
         printf("2.-Cruzamiento Uniforme\n");
         printf("3.-Cruzamiento por Mascara Aleatoria\n");
@@ -169,6 +190,11 @@ int main() {
             case 4:{
                 //Seleccion Estocastica
                 seleccionEstocastica(&parametros);
+                break;
+            }
+            case 5:{
+                //Seleccion Estocastica
+                seleccionTruncamientoExamen(&parametros);
                 break;
             }
             default:{
@@ -220,7 +246,8 @@ int main() {
         }
 
         //Imprimiendo los resultados
-        printf("Generacion %d \n", contadorGeneraciones);
+        printf("\nGeneracion %d despues de Cruzamiento y Mutacion \n", contadorGeneraciones);
+        calcularFitness(&parametros);
         imprimirGeneracion(&parametros);
 
         // Actualizando el índice anterior
@@ -235,6 +262,42 @@ int main() {
     free(parametros.fitness);
 
     return 0;
+}
+
+//Seleccionador de EXAMEN
+void seleccionTruncamientoExamen(struct parametros* parametros){
+    //Calculando la cantidad de individuos de la poblacion que se van a usar para la cruza
+    int totalIndividuosCruza = (parametros->porcientoTruncamiento * parametros->tamPoblacion) / 100;
+    //nueva Generacion
+    int** nuevaGeneracion = (int**) malloc(parametros->tamPoblacion * sizeof(int*));
+    for(int i = 0; i < parametros->tamPoblacion; i++){
+        nuevaGeneracion[i] = (int*) malloc (parametros->tamCromosoma * sizeof(int));
+    }
+    //Ordenando la generacion por fitness
+    ordenar_por_fitness(parametros);
+    for(int i=0; i<parametros->tamPoblacion; i++){
+        for(int j=0; j<parametros->tamCromosoma; j++){
+            //Mientras el contador sea menor que la cantidad de individuos por truncamiento, se copian los mejores individuos
+            if(i<=totalIndividuosCruza){
+                nuevaGeneracion[i][j] = parametros->generacion[i][j];
+            }
+            //cuando el contador es mayor que la cantidad de individuos por truncamiento, se generan numeros entre 0 y 1 aleatoriamente
+            if(i>totalIndividuosCruza){
+                nuevaGeneracion[i][j] = numeroBinario();
+            }
+        }
+    }
+    // Liberar la generación antigua
+    for(int i = 0; i < parametros->tamPoblacion; i++) {
+        free(parametros->generacion[i]);
+    }
+    free(parametros->generacion);
+    //Cambiando la generacion anterior con la nueva
+    parametros->generacion = nuevaGeneracion;
+    printf("\nIndividuos seleccionados\n");
+    printf("%d individuos se seleccionan por fitness, %d se generan con numeros binarios aleatoriamente\n", totalIndividuosCruza, parametros->tamPoblacion - totalIndividuosCruza);
+    calcularFitness(parametros);
+    imprimirGeneracion(parametros);
 }
 
 //Asigna memoria para la generacion
@@ -707,7 +770,6 @@ void seleccionTorneo(struct parametros* parametros) {
     parametros->generacion = individuosSeleccionados;
 }
 
-
 void mutacion(struct parametros* parametros) {
     int cantidadMutaciones, indiceAleatorio;
     for (int i = 1; i < parametros->tamPoblacion; i++) {
@@ -732,6 +794,12 @@ void imprimirGeneracion(struct parametros* parametros) {
     }
     printf("\n");
     printf("El mejor individuo de la generacion obtuvo:  %d\n", parametros->fitness[mejorIndividuo(parametros)]);
+    printf("\t-Parametros-\n");
+    printf("Tamanio Poblacion: %d\n",parametros->tamPoblacion);
+    printf("Porcentaje de Truncamiento de Seleccion por Fitness: %d%\n",parametros->porcientoTruncamiento);
+    printf("Tamanio de Cromosomas: %d\n",parametros->tamCromosoma);
+    printf("Cantidad Maxima de Generaciones:  %d\n", parametros->maxGeneraciones);
+    printf("Probabilidad de Cruza: %f\n",parametros->probCruza);
     printf("Probabilidad de mutacion actual:  %f\n", parametros->probMutacion);
 }
 
@@ -876,7 +944,7 @@ void lecturaParametrosArchivo(struct parametros* parametros) {
                 break;
             case 9:
                 intValue = atoi(buffer);
-                if(intValue > 0 and intValue <5){
+                if(intValue > 0 and intValue <6){
                     parametros->opcionSeleccion = intValue;
                     printf("\nopcionSeleccion: %d", parametros->opcionSeleccion);
                 }

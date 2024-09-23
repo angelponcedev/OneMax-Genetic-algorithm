@@ -17,6 +17,7 @@ Opciones disponibles para la seleccion y Cruza:
         2.-Seleccion por Truncamiento
         3.-Seleccion por Torneo
         4.-Seleccion Estocastica
+        5.-Seleccion por Truncamiento Modificada [Seleccion del Examen]
 
     MENU CRUZA
         1.-Cruza por Segmentos
@@ -39,7 +40,7 @@ Probabilidad de mutación base (flotante entre 0 y 1)
 Taza de  aumento de la mutación base (flotante entre 0 y 1)
 Probabilidad de cruzamiento (flotante entre 0 y 1)
 Porciento de poblacion utilizada para truncamiento (entero entre 1 y 100)
-Opcion de seleccion (entero entre 1 y 4)
+Opcion de seleccion (entero entre 1 y 5)
 Opcion de cruzamiento (entero entre 1 y 4)
 
-Se incluye un archivo ejemplo 'parametros.txt' como referencia de un archivo que puede leer el programa.
+Se incluye un archivo ejemplo 'parametros15.txt','parametros30.txt' como referencia de un archivo que puede leer el programa.
