@@ -37,25 +37,18 @@ To Do  List:
         -individuos seleccionados pasan directamnete a la nueva generacion                                  🗸
         -el resto de la poblacion se rellena con 0 y 1 aleatorio                                            🗸
 
-        -Requerimientos:
-            -Codificarlo como funcion                                                                       🗸
-            -Hacer logs de como funciona                                                                    🗸
-            -El resto de operadores son al gusto                                                            🗸
-            -Preparar parametros txt para probar la funcion
-            -Corrida del programa con 15 y 30 cromosomas
-            -Cuando se llegue al mejor reportar los parametros usados
-
-        -Entregables:
-            -codigo fuente con comentarios
-            -word con evidencias
-            -los dos txt para 15 y 30 cromosomas
+        -Realizar 30 corridas [Minimo] para obtener resultados estadisticamente sinificantes
+        -Agregar funcion para leer el numero de corridas que se van a realizar por consola y archivo
+        -Realizar un promedio del fitness de un array con los mejores individuos de cada generacion
+        -Imprimir resultados
 */
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
 #include <cstring>
-//Declarando struct de control de datos para el algogenetico
+//Declarando struct de control de datos para el algo genetico
 struct parametros {
+    int numCorridas;
     int tamPoblacion;
     int tamCromosoma;
     int maxGeneraciones;
@@ -103,7 +96,7 @@ int seleccionRuleta(struct parametros* parametros);
 
 int main() {
     //Inicializando Struct
-    struct parametros parametros = {0,0,0,0,0.01,0.01,0.7,50,0};
+    struct parametros parametros = {0,0,0,0,0,0.01,0.01,50,70};
     int opcionEntrada = 0, opcionCruzamiento = 0, opcionSeleccion = 0;
 
     // Semilla de números aleatorios
@@ -158,101 +151,119 @@ int main() {
     // Asignación dinámica de memoria
     crearGeneracion(&parametros);
 
-    int contadorGeneraciones = 0, fitnessMejorIndividuoAnterior = 0, fitnessMejorIndividuoActual = 0, contadorMejorSinCambio = 0;
+    int contadorGeneraciones = 0, fitnessMejorIndividuoAnterior = 0, fitnessMejorIndividuoActual = 0, contadorMejorSinCambio = 0, contadorCorridas = 0;
+    int arrayMejores[parametros.numCorridas];
+    float promedioCorridas = 0;
 
-    // Generación inicial
-    contadorGeneraciones++;
-    printf("Generacion %d \n", contadorGeneraciones);
-    generacionInicial(&parametros);
-    calcularFitness(&parametros);
-    imprimirGeneracion(&parametros);
-    fitnessMejorIndividuoAnterior = mejorIndividuo(&parametros);
-
-    // Mejoramiento de generaciones
-    while (contadorGeneraciones < parametros.maxGeneraciones) {
+    while(contadorCorridas < parametros.numCorridas){
+        contadorGeneraciones = 0;
+        // Generación inicial
         contadorGeneraciones++;
-        switch(opcionSeleccion){
-            case 1:{
-                //Seleccion por ruleta
-                nuevaGeneracion(&parametros);
-                break;
-            }
-            case 2:{
-                //Seleccion por truncamiento
-                seleccionTruncamiento(&parametros);
-                break;
-            }
-            case 3:{
-                //Seleccion por Torneo
-                seleccionTorneo(&parametros);
-                break;
-            }
-            case 4:{
-                //Seleccion Estocastica
-                seleccionEstocastica(&parametros);
-                break;
-            }
-            case 5:{
-                //Seleccion Estocastica
-                seleccionTruncamientoExamen(&parametros);
-                break;
-            }
-            default:{
-                printf("Ocurrio un error al registrar la opcion de Seleccion.\n");
-                exit(1);
-            }
-        }
-        switch (opcionCruzamiento) {
-            case 1:{
-                //Cruza por segmentos
-                cruzarPorSegmentos(&parametros);
-                break;
-            }
-            case 2:{
-                //Cruza Uniformemente
-                cruzarUniformemente(&parametros);
-                break;
-            }
-            case 3:{
-                //Cruza por Mascara Aleatoria
-                cruzarMascaraAleatoria(&parametros);
-                break;
-            }
-            case 4:{
-                //Cruza por Inversion
-                cruzarInversion(&parametros);
-                break;
-            }
-            default:{
-                printf("Ocurrio un error al registrar la opcion de Cruza.\n");
-                exit(1);
-            }
-        }
-
-        mutacion(&parametros);
-        calcularFitness(&parametros);
-        fitnessMejorIndividuoActual = parametros.fitness[mejorIndividuo(&parametros)];
-        
-        //Revisando si el mejor individuo no ha cambiado
-        if(fitnessMejorIndividuoActual == fitnessMejorIndividuoAnterior) {
-            contadorMejorSinCambio++;
-            if(contadorMejorSinCambio >= parametros.cantidadRepeticionesMejor) {
-                parametros.probMutacion += parametros.tazaCambioMutacion;
-                if(parametros.probMutacion > 1) parametros.probMutacion = 1;
-                contadorMejorSinCambio = 0;
-            }
-        } else {
-            contadorMejorSinCambio = 0;
-        }
-
-        //Imprimiendo los resultados
-        printf("\nGeneracion %d despues de Cruzamiento y Mutacion \n", contadorGeneraciones);
+        printf("Generacion %d \n", contadorGeneraciones);
+        generacionInicial(&parametros);
         calcularFitness(&parametros);
         imprimirGeneracion(&parametros);
+        fitnessMejorIndividuoAnterior = mejorIndividuo(&parametros);
 
-        // Actualizando el índice anterior
-        fitnessMejorIndividuoAnterior = fitnessMejorIndividuoActual;
+        // Mejoramiento de generaciones
+        while (contadorGeneraciones < parametros.maxGeneraciones) {
+            contadorGeneraciones++;
+            switch(opcionSeleccion){
+                case 1:{
+                    //Seleccion por ruleta
+                    nuevaGeneracion(&parametros);
+                    break;
+                }
+                case 2:{
+                    //Seleccion por truncamiento
+                    seleccionTruncamiento(&parametros);
+                    break;
+                }
+                case 3:{
+                    //Seleccion por Torneo
+                    seleccionTorneo(&parametros);
+                    break;
+                }
+                case 4:{
+                    //Seleccion Estocastica
+                    seleccionEstocastica(&parametros);
+                    break;
+                }
+                case 5:{
+                    //Seleccion Estocastica
+                    seleccionTruncamientoExamen(&parametros);
+                    break;
+                }
+                default:{
+                    printf("Ocurrio un error al registrar la opcion de Seleccion.\n");
+                    exit(1);
+                }
+            }
+            switch (opcionCruzamiento) {
+                case 1:{
+                    //Cruza por segmentos
+                    cruzarPorSegmentos(&parametros);
+                    break;
+                }
+                case 2:{
+                    //Cruza Uniformemente
+                    cruzarUniformemente(&parametros);
+                    break;
+                }
+                case 3:{
+                    //Cruza por Mascara Aleatoria
+                    cruzarMascaraAleatoria(&parametros);
+                    break;
+                }
+                case 4:{
+                    //Cruza por Inversion
+                    cruzarInversion(&parametros);
+                    break;
+                }
+                default:{
+                    printf("Ocurrio un error al registrar la opcion de Cruza.\n");
+                    exit(1);
+                }
+            }
+
+            mutacion(&parametros);
+            calcularFitness(&parametros);
+            fitnessMejorIndividuoActual = parametros.fitness[mejorIndividuo(&parametros)];
+
+            //Revisando si el mejor individuo no ha cambiado
+            if(fitnessMejorIndividuoActual == fitnessMejorIndividuoAnterior) {
+                contadorMejorSinCambio++;
+                if(contadorMejorSinCambio >= parametros.cantidadRepeticionesMejor) {
+                    parametros.probMutacion += parametros.tazaCambioMutacion;
+                    if(parametros.probMutacion > 1) parametros.probMutacion = 1;
+                    contadorMejorSinCambio = 0;
+                }
+            } else {
+                contadorMejorSinCambio = 0;
+            }
+
+            //Imprimiendo los resultados
+            printf("\nGeneracion %d despues de Cruzamiento y Mutacion \n", contadorGeneraciones);
+            calcularFitness(&parametros);
+            imprimirGeneracion(&parametros);
+
+            // Actualizando el índice anterior
+            fitnessMejorIndividuoAnterior = fitnessMejorIndividuoActual;
+        }
+        arrayMejores[contadorCorridas] = fitnessMejorIndividuoActual;
+        contadorCorridas++;
+        promedioCorridas += fitnessMejorIndividuoActual;
     }
+    //Calculando promedio
+    promedioCorridas = promedioCorridas / parametros.numCorridas;
+    //Imprimiendo resultados de las corridas
+    printf("\nResultados de %d Corridas:\n",parametros.numCorridas);
+    for(int i = 0; i < parametros.numCorridas; i++){
+        printf("%d.-%d\t",i+1,arrayMejores[i]);
+    }
+
+    printf("\nPromedio del mejor individuo de %d Corridas:\n",parametros.numCorridas);
+    printf("%f",promedioCorridas);
 
     // Liberar memoria
     for (int i = 0; i < parametros.tamPoblacion; i++) {
@@ -864,6 +875,16 @@ void lecturaParametrosArchivo(struct parametros* parametros) {
         switch (i) {
             case 1:
                 intValue = atoi(buffer);
+                if (intValue < 30) {
+                    parametros->numCorridas = 30;
+                    printf("\nnumCorridas fuera de rango. Valor por defecto: %d", parametros->numCorridas);
+                } else {
+                    parametros->numCorridas = intValue;
+                    printf("\nnumCorridas: %d", parametros->numCorridas);
+                }
+                break;
+            case 2:
+                intValue = atoi(buffer);
                 if (intValue < 2) {
                     parametros->tamPoblacion = 100;
                     printf("\ntamPoblacion fuera de rango. Valor por defecto: %d", parametros->tamPoblacion);
@@ -872,7 +893,7 @@ void lecturaParametrosArchivo(struct parametros* parametros) {
                     printf("\ntamPoblacion: %d", parametros->tamPoblacion);
                 }
                 break;
-            case 2:
+            case 3:
                 intValue = atoi(buffer);
                 if (intValue < 3) {
                     parametros->tamCromosoma = 20;
@@ -882,7 +903,7 @@ void lecturaParametrosArchivo(struct parametros* parametros) {
                     printf("\ntamCromosoma: %d", parametros->tamCromosoma);
                 }
                 break;
-            case 3:
+            case 4:
                 intValue = atoi(buffer);
                 if (intValue < 1) {
                     parametros->maxGeneraciones = 20;
@@ -892,7 +913,7 @@ void lecturaParametrosArchivo(struct parametros* parametros) {
                     printf("\nmaxGeneraciones: %d", parametros->maxGeneraciones);
                 }
                 break;
-            case 4:
+            case 5:
                 intValue = atoi(buffer);
                 if (intValue < 1) {
                     parametros->cantidadRepeticionesMejor = 2;
@@ -902,7 +923,7 @@ void lecturaParametrosArchivo(struct parametros* parametros) {
                     printf("\nrepeticionesMejor: %d", parametros->cantidadRepeticionesMejor);
                 }
                 break;
-            case 5:
+            case 6:
                 floatValue = atof(buffer);
                 if (floatValue < 0 || floatValue > 1) {
                     parametros->probMutacion = 0.05;
@@ -912,7 +933,7 @@ void lecturaParametrosArchivo(struct parametros* parametros) {
                     printf("\nprobMutacion: %f", parametros->probMutacion);
                 }
                 break;
-            case 6:
+            case 7:
                 floatValue = atof(buffer);
                 if (floatValue < 0 || floatValue > 1) {
                     parametros->tazaCambioMutacion = 0.01;
@@ -922,7 +943,7 @@ void lecturaParametrosArchivo(struct parametros* parametros) {
                     printf("\ntazaCambioMutacion: %f", parametros->tazaCambioMutacion);
                 }
                 break;
-            case 7:
+            case 8:
                 floatValue = atof(buffer);
                 if (floatValue < 0 || floatValue > 1) {
                     parametros->probCruza = 0.7;
@@ -932,7 +953,7 @@ void lecturaParametrosArchivo(struct parametros* parametros) {
                     printf("\nprobCruza: %f", parametros->probCruza);
                 }
                 break;
-            case 8:
+            case 9:
                 intValue = atoi(buffer);
                 if (intValue < 0 || intValue > 100) {
                     parametros->porcientoTruncamiento = 70;
@@ -942,7 +963,7 @@ void lecturaParametrosArchivo(struct parametros* parametros) {
                     printf("\nporcientoTruncamiento: %d", parametros->porcientoTruncamiento);
                 }
                 break;
-            case 9:
+            case 10:
                 intValue = atoi(buffer);
                 if(intValue > 0 and intValue <6){
                     parametros->opcionSeleccion = intValue;
@@ -954,7 +975,7 @@ void lecturaParametrosArchivo(struct parametros* parametros) {
                     printf("\nopcionSeleccion fuera de rango. Valor por defecto: %d", parametros->porcientoTruncamiento);
                 }
                 break;
-            case 10:
+            case 11:
                 intValue = atoi(buffer);
                 if(intValue > 0 and intValue <5){
                     parametros->opcionCruzamiento = intValue;
@@ -970,7 +991,7 @@ void lecturaParametrosArchivo(struct parametros* parametros) {
                 printf("\nLectura de valores ha finalizado\n");
                 break;
         }
-        if (i > 9) {
+        if (i > 11) {
             break;  // Salir del ciclo después de leer todos los parámetros esperados
         }
     }
@@ -979,6 +1000,11 @@ void lecturaParametrosArchivo(struct parametros* parametros) {
 
 void lecturaParametrosConsola(struct parametros* parametros){
     // Solicitar valores al usuario
+    do{
+        printf("Ingrese el numero de corridas del Algoritmo Gentico (Minimo 30): ");
+        scanf("%d", &parametros->numCorridas);
+    }while(parametros->numCorridas<30);
+
     do{
         printf("Ingrese el tamaño de la población (Minimo 2): ");
         scanf("%d", &parametros->tamPoblacion);

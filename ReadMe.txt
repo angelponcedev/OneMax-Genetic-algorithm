@@ -32,6 +32,7 @@ De lo contrario se asignaran valores por defecto a los parametros de ejecucion.
 El archivo de parámetros debe estar en formato de texto plano y debe incluir los siguientes valores,
 cada uno en una línea separada:
 
+Numero de corridas del AG (entero igual o mayor a 30)
 Tamaño de la población (entero mayor a 0)
 Tamaño de los cromosomas (entero mayor a 3)
 Número máximo de generaciones (entero mayor a 0)
